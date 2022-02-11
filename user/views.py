@@ -1273,19 +1273,13 @@ class GetAllTeamScore(APIView):
                 print(p2_result)
 
                
-                if p1_result=[] and p2_result=[]:
-                    print("_________")
-                else:    
-                    if len(p1_result)>len(p2_result):
-                        dictV['final_result']="player1 wins"
-                    else:
-                        dictV['final_result']="player2 wins"
-    
-                    if len(p1_result)<len(p2_result):
-                        dictV['final_result']="player2 wins"
-                    else:
-                        dictV['final_result']="player1 wins"    
-                    
+               
+                if len(p1_result)>len(p2_result):
+                    dictV['final_result']="player1 wins"
+            
+
+                if len(p1_result)<len(p2_result):
+                    dictV['final_result']="player2 wins"
                 
             if team_score:
                serializer=TeamScoreSerializer(team_score,many=True)  
