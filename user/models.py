@@ -159,19 +159,31 @@ class Team2Players(models.Model):
     player=models.ForeignKey(Profile,on_delete=models.CASCADE)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
 
-
+from django.db.models.functions import Greatest
 class TeamScore(models.Model):
     host_match=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='host_score')
     round=models.IntegerField()
     team1_player_score=models.IntegerField()
     team2_player_score=models.IntegerField()
     date_added=models.DateTimeField(default=django.utils.timezone.now)
+    # result=models.CharField(max_length=100,null=True,blank=True)
+
+    def save(self):
+        self.result = TeamScore.objects.annotate(res=Greatest('team1_player_score', 'team2_player_score')
+)
+        return super(TeamScore, self).save()
+
+    def __str__(self):
+        return self.host_match.user_id.user_id.first_name    
 
 class PlayersRating(models.Model):
     host_match=models.ForeignKey(HostMatch,on_delete=models.CASCADE)
     player=models.ForeignKey(Profile,on_delete=models.CASCADE)
     rating=models.IntegerField(blank=True,null=True)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
+
+
+
 
 
 

@@ -64,6 +64,18 @@ class SetNewPasswordSerializer(serializers.Serializer):
             raise AuthenticationFailed("The reset link is invalid", 401)
         return super().validate(attrs)
 
+
+class TeamScoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=TeamScore
+        fields="__all__"
+        
+        
+
+
+
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     # user_id=UserSerializer(read_only=True)
     class Meta:
@@ -73,19 +85,20 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class Team1PlayerSerializer(serializers.ModelSerializer):
-    player=ProfileSerializer(read_only=True)
+    # player=ProfileSerializer(read_only=True)
 
     class Meta:
         model=Team1Players
         fields="__all__"
 
 class Team2PlayerSerializer(serializers.ModelSerializer):
-
+    # player=ProfileSerializer(read_only=True)
+    
     class Meta:
         model=Team2Players
         fields="__all__"    
 
-class HostScoreSerializer(serializers.ModelSerializer):
+class TeamScoreSerializer(serializers.ModelSerializer):
     
     class Meta:
         model=TeamScore
@@ -116,7 +129,7 @@ class HostInvitationSerializer(serializers.ModelSerializer):
 class GetHostMatchSerializer(serializers.ModelSerializer):
     host_player_1=Team1PlayerSerializer(read_only=True,many=True)
     host_player_2=Team2PlayerSerializer(read_only=True,many=True)
-    host_score=HostScoreSerializer(read_only=True,many=True)
+    host_score=TeamScoreSerializer(read_only=True,many=True)
     # hostmatch=HostInvitationSerializer(many=True)
     class Meta:
         model=HostMatch

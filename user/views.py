@@ -1,4 +1,5 @@
 
+from ssl import PROTOCOL_TLSv1_1
 from django.shortcuts import redirect, render
 from django.shortcuts import render
 from rest_framework.response import Response
@@ -507,6 +508,7 @@ class DeleteProfile(APIView):
                     "message": "Profile Does Not Exist",
                 }
             )
+
 from datetime import datetime
 class GetAllHostMatch(APIView):
     """
@@ -1218,6 +1220,283 @@ class DeleteBuisness(APIView):
                     "message": "Buisness Does Not Exist",
                 }
             )
+
+#Team Score API's
+class GetAllTeamScore(APIView):
+    """
+    Get All TeamScore
+    """
+    # permission_classes=(IsAuthenticated,)
+
+    host_match = openapi.Parameter('host_match',
+                            in_=openapi.IN_QUERY,
+                            description='enter host_match id',
+                            type=openapi.TYPE_STRING,
+                            )
+    total_score = openapi.Parameter('total_score',
+                            in_=openapi.IN_QUERY,
+                            description='maximum score of match',
+                            type=openapi.TYPE_STRING,
+                            )   
+    @swagger_auto_schema(
+            manual_parameters=[host_match,total_score]
+    )                        
+
+    @csrf_exempt
+    def get(self, request):
+        try:
+            dictV=dict()
+            data=request.GET
+            if data.get('host_match'):     
+                host_match=data.get('host_match')
+            else:
+                host_match=""
+
+
+            
+            if data.get('total_score'):
+                total_score=data.get('total_score')
+            else:
+                total_score=""    
+            
+            team_score=TeamScore.objects.all()
+            print(team_score)
+
+            if not host_match:
+                print("______")
+                dictV['msg']="enter a hostmatch_id"
+
+            if host_match and total_score:
+                p1_result=team_score.filter(host_match=host_match,team1_player_score=total_score)
+                print(p1_result)
+                p2_result=team_score.filter(host_match=host_match,team2_player_score=total_score)
+                print(p2_result)
+
+               
+                if p1_result=[] and p2_result=[]:
+                    print("_________")
+                else:    
+                    if len(p1_result)>len(p2_result):
+                        dictV['final_result']="player1 wins"
+                    else:
+                        dictV['final_result']="player2 wins"
+    
+                    if len(p1_result)<len(p2_result):
+                        dictV['final_result']="player2 wins"
+                    else:
+                        dictV['final_result']="player1 wins"    
+                    
+                
+            if team_score:
+               serializer=TeamScoreSerializer(team_score,many=True)  
+   
+               return Response({
+                   'data':serializer.data,
+                   "final_result":dictV,
+                   'status':status.HTTP_200_OK,
+                   'msg':'list of Team_Score'
+               })                 
+            else:
+                return Response({'msg':'search not found'})
+
+        except:
+            return Response({"Team_Score does not find"})
+
+
+
+class CreateTeamScore(APIView):
+    """
+    Create TeamScore
+    """
+    
+    permission_classes=(IsAuthenticated,)
+    parser_classes = (FormParser, MultiPartParser)
+
+    @swagger_auto_schema(
+        operation_description="create TeamScore",
+        request_body=TeamScoreSerializer,
+    )
+    @csrf_exempt
+    def post(self, request):
+        serializer = TeamScoreSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return ResponseOk(
+                {
+                    "data": serializer.data,
+                    "code": status.HTTP_200_OK,
+                    "message": "Team_Score recorded Successfully",
+                }
+            )
+            
+        else:    
+            
+            return ResponseBadRequest(
+                {
+                    "data": serializer.errors,
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Team_Score is not valid",
+                }
+            )
+from django.db.models import Count
+from django.db.models.functions import Greatest
+class GetTeamScore(APIView):
+    """
+    Get TeamScore by pk
+    """
+    # permission_classes=(IsAuthenticated,)
+    host_id = openapi.Parameter('host_id',
+                            in_=openapi.IN_QUERY,
+                            description='enter host_id',
+                            type=openapi.TYPE_STRING,
+                            )
+    total_score = openapi.Parameter('total_score',
+                            in_=openapi.IN_QUERY,
+                            description='Enter total Score',
+                            type=openapi.TYPE_STRING,
+                            )   
+    @swagger_auto_schema(
+            manual_parameters=[host_id,total_score]
+    )                        
+
+    @csrf_exempt
+    def get_object(self, pk):
+        try:
+            return TeamScore.objects.get(pk=pk)
+        except TeamScore.DoesNotExist:
+            raise ResponseNotFound()
+
+    def get(self, request, pk):
+        try:
+            team_score = self.get_object(pk)
+
+            player1=team_score.team1_player_score
+            player2=team_score.team2_player_score
+            dictV=dict()
+            if player1>player2:
+                dictV['result']="player1 wins"
+            else:   
+                dictV['result']="player2 wins"
+    
+            # print(vars(team_score))
+
+            # round=TeamScore.objects.annotate(c=Count('round')) 
+            # len_round=len(round)
+            # print(len_round)
+            # print(round)
+            
+            # for i in range(0,len_round):
+            #     round=TeamScore.objects.annotate(c=Count('round')) 
+            #     score=round.annotate(res=Greatest('team1_player_score','team2_player_score'))
+            #     print(vars(score[0]))
+
+                # print("__________")
+                # print(vars(round[i]))
+                  
+            # print(vars(round[0]))
+
+            serializer = TeamScoreSerializer(team_score)
+            return ResponseOk(
+                {
+                    "data": serializer.data,
+                    "result":dictV,
+                    "code": status.HTTP_200_OK,
+                    "message": "get TeamScore successfully",
+                }
+            )
+        except:
+            return ResponseBadRequest(
+                {
+                    "data": None,
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "TeamScore Does Not Exist",
+                }
+            )
+
+
+class UpdateTeamScore(APIView):
+    """
+    Update TeamScore
+    """
+    permission_classes=(IsAuthenticated,)
+    parser_classes = (FormParser, MultiPartParser)
+
+
+    def get_object(self, pk):
+        try:
+            return TeamScore.objects.get(pk=pk)
+        except TeamScore.DoesNotExist:
+            raise ResponseNotFound()
+
+    @swagger_auto_schema(
+        operation_description="update TeamScore",
+        request_body=TeamScoreSerializer,
+    )
+    @csrf_exempt
+    def put(self, request, pk):
+        try:
+            team_score = self.get_object(pk)
+            serializer = TeamScoreSerializer(team_score, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return ResponseOk(
+                    {
+                        "data": serializer.data,
+                        "code": status.HTTP_200_OK,
+                        "message": "TeamScore updated successfully",
+                    }
+                )
+            else:
+                return ResponseBadRequest(
+                    {
+                        "data": serializer.errors,
+                        "code": status.HTTP_400_BAD_REQUEST,
+                        "message": "TeamScore Not valid",
+                    }
+                )
+        except:
+            return ResponseBadRequest(
+                {
+                    "data": None,
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "TeamScore Does Not Exist",
+                }
+            )
+
+
+class DeleteTeamScore(APIView):
+    """
+    Delete TeamScore
+    """
+    permission_classes=(IsAuthenticated,)
+
+    @csrf_exempt
+    def get_object(self, pk):
+        try:
+            return TeamScore.objects.get(pk=pk)
+        except TeamScore.DoesNotExist:
+            raise ResponseNotFound()
+
+    def delete(self, request, pk):
+        try:
+            team_score = self.get_object(pk)
+            team_score.delete()
+            return ResponseOk(
+                {
+                    "data": None,
+                    "code": status.HTTP_200_OK,
+                    "message": "TeamScore deleted Successfully",
+                }
+            )
+        except:
+            return ResponseBadRequest(
+                {
+                    "data": None,
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "TeamScore Does Not Exist",
+                }
+            )
+
 
 
 
