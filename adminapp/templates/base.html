@@ -1,0 +1,165 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="zxx">
+
+<meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Beach+</title>
+
+    <link rel="icon" href="{% static 'img/favicon.png' %}" type="image/png">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}" />
+    <!-- themefy CSS -->
+    <link rel="stylesheet" href="{% static 'vendors/themefy_icon/themify-icons.css' %}" />
+
+    <!-- font awesome CSS -->
+    <link rel="stylesheet" href="{% static 'vendors/font_awesome/css/all.min.css' %}" />
+
+    
+     <!-- scrollabe  -->
+     <link rel="stylesheet" href="{% static 'vendors/scroll/scrollable.css' %}" />
+    <!-- datatable CSS -->
+    <link rel="stylesheet" href="{% static 'vendors/datatable/css/jquery.dataTables.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'vendors/datatable/css/responsive.dataTables.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'vendors/datatable/css/buttons.dataTables.min.css' %}" />
+
+
+    <!-- menu css  -->
+    <link rel="stylesheet" href="{% static 'css/metisMenu.css' %}">
+    <!-- style CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+<body class="crm_body_bg">
+    
+
+<!-- main content part here -->
+ 
+ <!-- sidebar  -->
+<nav class="sidebar vertical-scroll  ps-container ps-theme-default ps-active-y">
+    <div class="logo d-flex justify-content-center mt-3 mb-5">
+        <a href="index-2.html"><img src="{% static 'img/dash_logo.svg' %}" alt=""></a>
+        <div class="sidebar_close_icon d-lg-none">
+            <i class="ti-close"></i>
+        </div>
+    </div>
+    <ul id="sidebar_menu">
+        <li>
+            <a href="/adminapp/dashboard/" aria-expanded="false">
+                <div class="icon_menu">
+                    <i class="ti-home"></i>
+                </div>
+                <span>Dashboard</span>
+            </a>
+        </li>
+        <li class="m-active">
+            <a href="/adminapp/BusinessManagement/" aria-expanded="false">
+                <div class="icon_menu">
+                    <i class="ti-stats-up dashbord_i"></i>
+                </div>
+                <span>Business Management</span>
+            </a>
+        </li>
+
+        <li >
+            <a href="/adminapp/UserManagement/" aria-expanded="false">
+                <div class="icon_menu">
+                    <i class="ti-user dashbord_i"></i>
+                </div>
+                <span>User Management</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="/adminapp/report/" aria-expanded="false">
+                <div class="icon_menu">
+                    <i class="ti-info-alt"></i>
+                </div>
+                <span>Report Management</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="/adminapp/logout/" aria-expanded="false">
+                <div class="icon_menu">
+                    <i class="ti-power-off"></i>
+                </div>
+                <span>Exit</span>
+            </a>
+        </li>
+        <li>
+            <a href="/adminapp/auth-change-password/" aria-expanded="false">
+                <div class="icon_menu">
+                    <i class="ti-user dashbord_i"></i>
+                </div>
+                <span>Change Password</span>
+            </a>
+        </li>
+      </ul>
+</nav>
+ <!--/ sidebar  -->
+
+
+<section class="main_content dashboard_part large_header_bg">
+        <!-- menu  -->
+    <div class="container-fluid no-gutters">
+        <div class="row">
+            <div class="col-lg-12 p-0 ">
+                <div class="header_iner d-flex justify-content-between align-items-center">
+                    <h3 class="f_s_30 f_w_700" >Welcome To Beach+</h3>
+                    <div class="sidebar_icon d-lg-none">
+                        <i class="ti-menu"></i>
+                    </div>
+                    <div class="header_right d-flex justify-content-between align-items-center">
+                        <div class="profile_info">
+                            <img src="{% static 'img/staf/2.png' %}" alt="#">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% block content %}
+
+{% endblock %}
+</section>
+<!-- main content part end -->
+
+
+
+<script src="{% static 'js/jquery-3.4.1.min.js' %}"></script>
+<!-- popper js -->
+<script src="{% static 'js/popper.min.js' %}"></script>
+<!-- bootstarp js -->
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+<!-- sidebar menu  -->
+<script src="{% static 'js/metisMenu.js' %}"></script>
+
+<!-- responsive table -->
+<script src="{% static 'vendors/datatable/js/jquery.dataTables.min.js' %}"></script>
+<script src="{% static 'vendors/datatable/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'vendors/datatable/js/dataTables.buttons.min.js' %}"></script>
+
+<!-- scrollabe  -->
+<script src="{% static 'vendors/scroll/perfect-scrollbar.min.js' %}"></script>
+<script src="{% static 'vendors/scroll/scrollable-custom.js' %}"></script>
+
+<script src="{% static 'js/custom.js' %}"></script>
+<script>
+    $(function() {
+   $("li").click(function() {
+
+      // add class to the one we clicked
+      $(this).addClass("m-active");
+            // remove classes from all
+            $("li").removeClass("m-active");
+   });
+});
+</script>
+</body>
+
+</html>

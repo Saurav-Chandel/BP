@@ -103,11 +103,14 @@ class LoginView(APIView):
             },
         ),
     )
+
     @csrf_exempt
     def post(self, request):
         data = request.data
         email = data.get("email")
         password = data.get("password")
+        username = data['email']
+
         try:
             user_object = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -118,6 +121,19 @@ class LoginView(APIView):
                     "message": "Serializer error",
                 }
             )
+        try:
+            user_object=User.objects.get(username__iexact=username)
+            if not user_object.is_active:
+                return ResponseBadRequest(
+                    {
+                        "code":status.HTTP_400_BAD_REQUEST,
+                        "message":"you are suspened user"
+                    }
+                )    
+        except:    
+            return ResponseBadRequest({
+                "msg":'user not found'
+            })    
 
         if user_object.check_password(password):
             print("password match")
@@ -1253,49 +1269,45 @@ class GetAllTeamScore(APIView):
                 host_match=""
 
 
-            
             if data.get('total_score'):
                 total_score=data.get('total_score')
             else:
                 total_score=""    
             
             team_score=TeamScore.objects.all()
-            print(team_score)
-
+          
             if not host_match:
                 print("______")
-                dictV['msg']="enter a hostmatch_id"
+                dictV['msg']="enter a hostmatch_id to get a final result"
 
             if host_match and total_score:
+                team_score=team_score.filter(host_match=host_match)
+                # print(team_score)
                 p1_result=team_score.filter(host_match=host_match,team1_player_score=total_score)
-                print(p1_result)
+                # print(p1_result)
                 p2_result=team_score.filter(host_match=host_match,team2_player_score=total_score)
-                print(p2_result)
+                # print(p2_result)
 
-               
-               
                 if len(p1_result)>len(p2_result):
                     dictV['final_result']="player1 wins"
             
-
                 if len(p1_result)<len(p2_result):
                     dictV['final_result']="player2 wins"
-                
-            if team_score:
-               serializer=TeamScoreSerializer(team_score,many=True)  
-   
-               return Response({
-                   'data':serializer.data,
-                   "final_result":dictV,
-                   'status':status.HTTP_200_OK,
-                   'msg':'list of Team_Score'
-               })                 
-            else:
-                return Response({'msg':'search not found'})
 
+            if team_score:
+                serializer=TeamScoreSerializer(team_score,many=True)  
+        
+                return Response({
+                    'data':serializer.data,
+                    "final_result":dictV,
+                    'status':status.HTTP_200_OK,
+                    'msg':'list of Team_Score'
+                })                 
+            else:
+                return Response({'msg':'hostmatch does not found'})
+                
         except:
             return Response({"Team_Score does not find"})
-
 
 
 class CreateTeamScore(APIView):
@@ -1338,20 +1350,21 @@ class GetTeamScore(APIView):
     """
     Get TeamScore by pk
     """
-    # permission_classes=(IsAuthenticated,)
-    host_id = openapi.Parameter('host_id',
+    # permission_classes=(IsAuthenticated,)  
+    
+    host_match = openapi.Parameter('host_match',
                             in_=openapi.IN_QUERY,
-                            description='enter host_id',
+                            description='enter host_match id',
                             type=openapi.TYPE_STRING,
                             )
     total_score = openapi.Parameter('total_score',
                             in_=openapi.IN_QUERY,
-                            description='Enter total Score',
+                            description='maximum score of match',
                             type=openapi.TYPE_STRING,
                             )   
     @swagger_auto_schema(
-            manual_parameters=[host_id,total_score]
-    )                        
+            manual_parameters=[host_match,total_score]
+    )                   
 
     @csrf_exempt
     def get_object(self, pk):
@@ -1363,7 +1376,6 @@ class GetTeamScore(APIView):
     def get(self, request, pk):
         try:
             team_score = self.get_object(pk)
-
             player1=team_score.team1_player_score
             player2=team_score.team2_player_score
             dictV=dict()

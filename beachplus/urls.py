@@ -37,6 +37,7 @@ from rest_framework import permissions
 from django.conf.urls.static import static
 from app.views import home
 
+
 schema_view = get_schema_view(
     openapi.Info(
         title="beachplus API",
@@ -53,6 +54,7 @@ urlpatterns = [
     path("", home),
     path('admin/', admin.site.urls),
     path("users/",include("user.urls", namespace="user")),
+    path("adminapp/",include("adminapp.urls")),
     path(
         "swagger/",
         schema_view.with_ui("swagger", cache_timeout=0),

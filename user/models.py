@@ -19,6 +19,8 @@ class AppUserManager(UserManager):
     def create_user(self, email, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
+        extra_fields.setdefault("is_active", False)
+      
         return self._create_user(email, password, **extra_fields)
 
     def _create_user(self, email, password, **extra_fields):
@@ -52,7 +54,6 @@ class User(AbstractUser):
         max_length=200, default=None, null=True, blank=True
     )
     email=models.EmailField(unique=True,null=False)
-
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -72,7 +73,7 @@ class Token(models.Model):
     created_on = models.DateTimeField(default=now, null=True, blank=True)
     expired_on = models.DateTimeField(default=now, null=True, blank=True)
 
-
+ 
 class Profile(models.Model):
     user_id=models.OneToOneField(User,on_delete=models.CASCADE,related_name="profile",null=True,blank=True)
     profile_image = models.ImageField(upload_to ='media',null=True,blank=True)
