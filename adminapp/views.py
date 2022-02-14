@@ -46,6 +46,10 @@ def report_management(request):
     data=Report.objects.all()
     return render(request,'report_management.html',{'data':data})    
 
+def suspend(request):
+    if request.method == "GET":
+        btn=request.GET.get('mybtn')
+        Suspend=Suspend_User.objects.get(profile__user_id__.is_active==False)
 
 
 @login_required(redirect_field_name='next', login_url='/')
