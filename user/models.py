@@ -7,6 +7,21 @@ import django
 # from app import choices
 
 # Create your models here.
+
+hostmatch_selectmode_catchoice=(
+    ('public','public'),
+    ('private','private')
+)
+hostmatch_status_catchoice=(
+    ('Initiated','Initiated'),
+    ('Completed','Completed'),
+    ('Cancel','cancel')
+)
+hostinvitation_status_catchoice=(
+    ('Sent','Sent'),
+    ('Decline','Decline'),
+    ('Attend','Attend')
+)
 TOKEN_TYPE_CHOICES = (
     ("verification", "Email Verification"),
     ("pwd_reset", "Password Reset"),
@@ -19,7 +34,6 @@ class AppUserManager(UserManager):
     def create_user(self, email, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
-        extra_fields.setdefault("is_active", False)
       
         return self._create_user(email, password, **extra_fields)
 
@@ -98,20 +112,8 @@ class HostMatch(models.Model):
     date=models.DateField()
     time=models.TimeField()
     location=models.CharField(max_length=200,null=True,blank=True)
-    public='public'
-    private='private'
-    CategoryChoices=[(public,'public'),
-                     (private,'private')]
-
-    Initiated='Initiated'
-    Completed='Completed'
-    InCompleted='InCompleted'    
-    StatusChoices=[(Initiated,'Initiated'),
-                   (Completed,'Completed'),
-                   (InCompleted,'InCompleted')]
-            
-    select_mode=models.CharField(max_length=100,blank=True,null=True,choices=CategoryChoices)
-    status=models.CharField(max_length=200,blank=True,null=True,choices=StatusChoices)
+    select_mode=models.CharField(max_length=100,blank=True,null=True,choices=hostmatch_selectmode_catchoice)
+    status=models.CharField(max_length=200,blank=True,null=True,choices=hostmatch_status_catchoice)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
 
     def __str__(self):
@@ -120,35 +122,8 @@ class HostMatch(models.Model):
 class HostInvitation(models.Model):
     hostmatch_id=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='hostmatch')
     user_invited=models.ForeignKey(Profile,on_delete=models.CASCADE,null=True,blank=True,related_name='profile')
-
-    Sent='Sent'
-    Decline='Decline'
-    Attend='Attend'
-    CategoryChoices=[(Sent,'Sent'),
-                     (Decline,'Decline'),
-                     (Attend,'Attend')]
-    status=models.CharField(max_length=200,choices=CategoryChoices,null=True,blank=True)
+    status=models.CharField(max_length=200,choices=hostinvitation_status_catchoice,null=True,blank=True)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
-
-class Service(models.Model):
-    service_name=models.CharField(max_length=100,null=True,blank=True)
-
-    def __str__(self):
-        return self.service_name
-
-
-class Buisness(models.Model):
-    profile=models.ForeignKey(Profile,on_delete=models.CASCADE)
-    service=models.ForeignKey(Service,on_delete=models.CASCADE)
-    buisness_name=models.CharField(max_length=200,null=True,blank=True)
-    buisness_image=models.ImageField(upload_to='buisness_image',null=True,blank=True)
-    address=models.CharField(max_length=200,null=True,blank=True)
-    description=models.CharField(max_length=500,null=True,blank=True)
-    buisness_hours=models.CharField(max_length=200,null=True,blank=True)
-
-    def __str__(self):
-        return self.buisness_name
-
 
 class Team1Players(models.Model):
     host_match=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='host_player_1')
@@ -167,12 +142,11 @@ class TeamScore(models.Model):
     team1_player_score=models.IntegerField()
     team2_player_score=models.IntegerField()
     date_added=models.DateTimeField(default=django.utils.timezone.now)
-    # result=models.CharField(max_length=100,null=True,blank=True)
 
-    def save(self):
-        self.result = TeamScore.objects.annotate(res=Greatest('team1_player_score', 'team2_player_score')
-)
-        return super(TeamScore, self).save()
+
+#     def save(self):
+#         self.result = TeamScore.objects.annotate(res=Greatest('team1_player_score', 'team2_player_score'))
+#         return super(TeamScore, self).save()
 
     def __str__(self):
         return self.host_match.user_id.user_id.first_name    
@@ -182,8 +156,6 @@ class PlayersRating(models.Model):
     player=models.ForeignKey(Profile,on_delete=models.CASCADE)
     rating=models.IntegerField(blank=True,null=True)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
-
-
 
 
 

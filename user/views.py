@@ -524,6 +524,7 @@ class DeleteProfile(APIView):
                     "message": "Profile Does Not Exist",
                 }
             )
+from django.db.models.functions import Greatest
 
 from datetime import datetime
 class GetAllHostMatch(APIView):
@@ -1029,213 +1030,6 @@ class DeleteHostInvitation(APIView):
 
 
 
-class GetAllBuisness(APIView):
-    """
-    Get All Buisness
-    """
-    permission_classes=(IsAuthenticated,)
-
-    city = openapi.Parameter('city',
-                            in_=openapi.IN_QUERY,
-                            description='Search by city',
-                            type=openapi.TYPE_STRING,
-                            )
-    state = openapi.Parameter('state',
-                            in_=openapi.IN_QUERY,
-                            description='Search by state',
-                            type=openapi.TYPE_STRING,
-                            )   
-    @swagger_auto_schema(
-            manual_parameters=[city,state]
-    )                        
-
-    @csrf_exempt
-    def get(self, request):
-        try:
-            data=request.GET
-            if data.get('city'):     
-                city=data.get('city')
-            else:
-                city=""
-            
-            if data.get('state'):
-                state=data.get('state')
-            else:
-                state=""    
-    
-            buisness=Buisness.objects.all()
-            if city:
-                buisness=buisness.filter(Q(profile__city__icontains=city))  
-            if state:
-                buisness=buisness.filter(Q(profile__state__icontains=state))      
-            if buisness:
-                serializer=BuisnessSerializer(buisness,many=True)  
-                return Response({
-                    'data':serializer.data,
-                    'status':status.HTTP_200_OK,
-                    'msg':'All Buisness by given search'
-                })                 
-            else:
-                return Response({'msg':'search not found'})
-        except:
-            return Response({'msg':'search query does not found'})
-
-
-
-class CreateBuisness(APIView):
-    """
-    Create Buisness
-    """
-    
-    permission_classes=(IsAuthenticated,)
-    parser_classes = (FormParser, MultiPartParser)
-
-
-    @swagger_auto_schema(
-        operation_description="create Buisness",
-        request_body=BuisnessSerializer,
-    )
-    @csrf_exempt
-    def post(self, request):
-        serializer = BuisnessSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return ResponseOk(
-                {
-                    "data": serializer.data,
-                    "code": status.HTTP_200_OK,
-                    "message": "Buisness created succesfully",
-                }
-            )
-            
-        else:    
-            
-            return ResponseBadRequest(
-                {
-                    "data": serializer.errors,
-                    "code": status.HTTP_400_BAD_REQUEST,
-                    "message": "Buisness is not valid",
-                }
-            )
-
-
-
-class GetBuisness(APIView):
-    """
-    Get Buisness by pk
-    """
-    permission_classes=(IsAuthenticated,)
-    
-    csrf_exempt
-    def get_object(self, pk):
-        try:
-            return Buisness.objects.get(pk=pk)
-        except Buisness.DoesNotExist:
-            raise ResponseNotFound()
-
-    def get(self, request, pk):
-        try:
-            buisness = self.get_object(pk)
-            serializer = BuisnessSerializer(buisness)
-            return ResponseOk(
-                {
-                    "data": serializer.data,
-                    "code": status.HTTP_200_OK,
-                    "message": "get Buisness successfully",
-                }
-            )
-        except:
-            return ResponseBadRequest(
-                {
-                    "data": None,
-                    "code": status.HTTP_400_BAD_REQUEST,
-                    "message": "Buisness Does Not Exist",
-                }
-            )
-
-
-class UpdateBuisness(APIView):
-    """
-    Update Buisness
-    """
-    permission_classes=(IsAuthenticated,)
-    parser_classes = (FormParser, MultiPartParser)
-
-
-    def get_object(self, pk):
-        try:
-            return Buisness.objects.get(pk=pk)
-        except Buisness.DoesNotExist:
-            raise ResponseNotFound()
-
-    @swagger_auto_schema(
-        operation_description="update Buisness",
-        request_body=BuisnessSerializer,
-    )
-    @csrf_exempt
-    def put(self, request, pk):
-        try:
-            buisness = self.get_object(pk)
-            serializer = BuisnessSerializer(buisness, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return ResponseOk(
-                    {
-                        "data": serializer.data,
-                        "code": status.HTTP_200_OK,
-                        "message": "Buisness updated successfully",
-                    }
-                )
-            else:
-                return ResponseBadRequest(
-                    {
-                        "data": serializer.errors,
-                        "code": status.HTTP_400_BAD_REQUEST,
-                        "message": "Buisness Not valid",
-                    }
-                )
-        except:
-            return ResponseBadRequest(
-                {
-                    "data": None,
-                    "code": status.HTTP_400_BAD_REQUEST,
-                    "message": "Buisness Does Not Exist",
-                }
-            )
-
-
-class DeleteBuisness(APIView):
-    """
-    Delete Buisness
-    """
-    permission_classes=(IsAuthenticated,)
-
-    @csrf_exempt
-    def get_object(self, pk):
-        try:
-            return Buisness.objects.get(pk=pk)
-        except Buisness.DoesNotExist:
-            raise ResponseNotFound()
-
-    def delete(self, request, pk):
-        try:
-            buisness = self.get_object(pk)
-            buisness.delete()
-            return ResponseOk(
-                {
-                    "data": None,
-                    "code": status.HTTP_200_OK,
-                    "message": "Buisness deleted Successfully",
-                }
-            )
-        except:
-            return ResponseBadRequest(
-                {
-                    "data": None,
-                    "code": status.HTTP_400_BAD_REQUEST,
-                    "message": "Buisness Does Not Exist",
-                }
-            )
 
 #Team Score API's
 class GetAllTeamScore(APIView):
@@ -1273,11 +1067,16 @@ class GetAllTeamScore(APIView):
                 total_score=data.get('total_score')
             else:
                 total_score=""    
+
+            
+           
             
             team_score=TeamScore.objects.all()
           
             if not host_match:
                 print("______")
+                # result=TeamScore.objects.annotate(res=Greatest('team1_player_score','team2_player_score')).values()
+                # print(result)
                 dictV['msg']="enter a hostmatch_id to get a final result"
 
             if host_match and total_score:

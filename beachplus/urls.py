@@ -54,6 +54,7 @@ urlpatterns = [
     path("", home),
     path('admin/', admin.site.urls),
     path("users/",include("user.urls", namespace="user")),
+    path("buisness/",include("buisness.urls", namespace="buisness")),
     path("adminapp/",include("adminapp.urls")),
     path(
         "swagger/",
@@ -66,10 +67,10 @@ urlpatterns = [
         name="schema-redoc",
     ),
 ]
-if settings.DEBUG:
-    urlpatterns += [] + static(
-        settings.STATIC_URL, document_root=settings.STATIC_ROOT
-    )
-    urlpatterns += [] + static(
-        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
-    )
+# if settings.DEBUG:
+#     urlpatterns += [] + static(
+#         settings.STATIC_URL, document_root=settings.STATIC_ROOT
+#     )
+#     urlpatterns += [] + static(
+#         settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
+#     )

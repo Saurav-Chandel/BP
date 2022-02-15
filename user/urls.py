@@ -27,12 +27,7 @@ urlpatterns = [
     path("host_invitation/api/v1/get/<int:pk>/", views.GetHostInvitation.as_view()),
     path("host_invitation/api/v1/update/<int:pk>/", views.UpdateHostInvitation.as_view()),
     path("host_invitation/api/v1/delete/<int:pk>/", views.DeleteHostInvitation.as_view()),
-    # Buisness
-    path("buisness/api/v1/list/", views.GetAllBuisness.as_view()),
-    path("buisness/api/v1/create/", views.CreateBuisness.as_view()),
-    path("buisness/api/v1/get/<int:pk>/", views.GetBuisness.as_view()),
-    path("buisness/api/v1/update/<int:pk>/", views.UpdateBuisness.as_view()),
-    path("buisness/api/v1/delete/<int:pk>/", views.DeleteBuisness.as_view()),
+
 
     # TeamScore
     path("team_score/api/v1/list/", views.GetAllTeamScore.as_view()),

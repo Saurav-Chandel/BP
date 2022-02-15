@@ -18,13 +18,6 @@ class Buisness(models.Model):
     def __str__(self):
        return self.name
 
-class Suspend_User(models.Model):
-    user=models.ForeignKey(Profile,on_delete=models.CASCADE)
-    is_suspended=models.BooleanField(default=False)
-
-
-    def __str__(self):
-        return self.user.user_id.first_name
 
  
 

@@ -31,34 +31,50 @@ def Login(request):
 
 
 
-@login_required(redirect_field_name='next', login_url='/')
+@login_required(redirect_field_name='next', login_url='/adminapp/login/')
 def dashboard(request):
     data=Profile.objects.all()
     return render(request,'dashboard.html',{'data':data})
 
-@login_required(redirect_field_name='next', login_url='/')
+@login_required(redirect_field_name='next', login_url='/adminapp/login/')
 def buisness_management(request):
     data=Buisness.objects.all()
     return render(request,'buisness_management.html',{'data':data})    
 
-@login_required(redirect_field_name='next', login_url='/')
+@login_required(redirect_field_name='next', login_url='/adminapp/login/')
 def report_management(request):
     data=Report.objects.all()
     return render(request,'report_management.html',{'data':data})    
 
 def suspend(request):
-    if request.method == "GET":
+    if request.method == 'GET':
         btn=request.GET.get('mybtn')
-        Suspend=Suspend_User.objects.get(profile__user_id__.is_active==False)
+        Suspend=User.objects.filter(id=btn,is_active=True).values('is_active').update(is_active=False)
+        return render(request,'dashboard.html')
 
 
-@login_required(redirect_field_name='next', login_url='/')
+@login_required(redirect_field_name='next', login_url='/adminapp/login/')
 def user_management(request):
     data=Profile.objects.all()
     return render(request,'user_management.html',{'data':data}) 
 
+from app.SendinSES import *
+from user.models import *
+class forgot_password(View):
+    def get(self,request):
+        return render(request,'forgot_password.html') 
 
-# @login_required(redirect_field_name='next', login_url='/')
+    def post(self,request):
+        user_email=request.POST.get('email')
+        email_body="link is send to your email for forgot your password"
+        user=User.objects.get(email=user_email)
+        if user:
+           send_reset_password_mail(request,user_email,email_body)
+
+        return render(request,'forgot_password.html') 
+
+
+# @login_required(redirect_field_name='next', login_url='/adminapp/login/')
 class  Change_Password(View):
     def get(self,request):
         return render(request,'change_password.html') 

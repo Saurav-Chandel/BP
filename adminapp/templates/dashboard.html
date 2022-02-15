@@ -73,6 +73,7 @@
                     </div>
                 </div>
             </div>
+            <form action="/adminapp/suspend" method="GET">
             <div class="col-lg-12">
                 <div class="white_card">
                     <h4 class="p-3 f_s_30 f_w_700">User Management</h4>
@@ -111,7 +112,9 @@
                                 <td>{{profile.city}}</td>
                                 <td>{{profile.state}}</td>
                                 <td>{{profile.zip}}</td>
-                                <td><a href="/views/" name ="mybtn' class="suspend_btn" data-toggle="modal" data-target="#exampleModalCenter">Suspend</a></td>
+                                <!-- <td><a href="{% url 'suspend' %}" name ='mybtn' id="mybtn" class="suspend_btn" data-toggle="modal" data-target="#exampleModalCenter">Suspend</a></td> -->
+                                <td><button name ='mybtn' value={{profile.id}} id="btn" class="suspend_btn" data-toggle="modal" data-target="#exampleModalCenter">Suspend</a></td>
+
                             </tr>
                             {% endfor %}
 
@@ -211,6 +214,7 @@
                 </div>
                 
             </div>
+         </form>
         </div>
     </div>
 </div>
@@ -231,7 +235,7 @@
     </div>
     <div class="modal-footer d-flex justify-content-center">
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button type="button" class="btn btn-primary" data-dismiss="modal">Yes, Sure</button>
+      <button type="button" name="mybtn" class="btn btn-primary" data-dismiss="modal">Yes, Sure</button>
     </div>
   </div>
 </div>

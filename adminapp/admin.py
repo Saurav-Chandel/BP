@@ -4,4 +4,3 @@ from .models import *
 
 admin.site.register(Report)
 admin.site.register(Buisness)
-admin.site.register(Suspend_User)

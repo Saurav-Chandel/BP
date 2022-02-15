@@ -12,11 +12,13 @@ urlpatterns = [
     # path('',Login.as_view(),name='login'),  
     path('login/',Login,name='login'),
     path('logout/',logout,name='logout'),
+    path('suspend/',suspend,name='suspend'),
     path('dashboard/',dashboard,name='dashboard'),
     path('BusinessManagement/',buisness_management,name='buisness_management'),
     path('report/',report_management,name='report_management'),
     path('UserManagement/',user_management,name='user_management'),
     # path('change_password/',views.Change_Password.as_view(),name='change_password'),
+    path('forgot_password/',views.forgot_password.as_view(),name='forgot_password'),
     path(
         'auth-change-password/',
         auth_views.PasswordChangeView.as_view(

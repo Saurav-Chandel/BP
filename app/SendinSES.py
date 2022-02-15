@@ -15,11 +15,8 @@ def send_reset_password_mail(request, user_email, email_body):
 
     if user_email and email_body:
         Message = email_body
-        print(Message)
         from_email = settings.EMAIL_HOST_USER
-        print(from_email)
         to_email = user_email
-        print(to_email)
         try:
             send_mail(
                 "Reset your passsword<Don't Reply>",

@@ -73,9 +73,6 @@ class TeamScoreSerializer(serializers.ModelSerializer):
         
 
 
-
-
-
 class ProfileSerializer(serializers.ModelSerializer):
     # user_id=UserSerializer(read_only=True)
     class Meta:
@@ -136,24 +133,13 @@ class GetHostMatchSerializer(serializers.ModelSerializer):
         fields="__all__"
 
 
-
-
-
-
-
 class GetProfileSerializer(serializers.ModelSerializer):
     user_id=UserSerializer(read_only=True)
     class Meta:
         model=Profile
         fields="__all__"
 
-class BuisnessSerializer(serializers.ModelSerializer):
-    profile=ProfileSerializer(read_only=True)
-    class Meta:
-        model=Buisness
-        fields="__all__"        
-
-
+    
 class ContactUsSerializer(serializers.ModelSerializer):
     class Meta:
         model=ContactUs
