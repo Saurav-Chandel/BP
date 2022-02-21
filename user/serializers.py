@@ -72,7 +72,6 @@ class TeamScoreSerializer(serializers.ModelSerializer):
         
         
 
-
 class ProfileSerializer(serializers.ModelSerializer):
     # user_id=UserSerializer(read_only=True)
     class Meta:
@@ -95,14 +94,6 @@ class Team2PlayerSerializer(serializers.ModelSerializer):
         model=Team2Players
         fields="__all__"    
 
-class TeamScoreSerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model=TeamScore
-        fields="__all__"   
-
-
-
 
 #this serializer is used with create or update hostmatch API's.
 class HostMatchSerializer(serializers.ModelSerializer):
@@ -111,33 +102,62 @@ class HostMatchSerializer(serializers.ModelSerializer):
         model=HostMatch
         fields="__all__"   
 
+    
+    # def update(self, instance, validated_data):
+    #     instance.hostmatch = validated_data.get('hostmatch', instance.hostmatch)
+    #     return instance
 
 
+#this serializer is used by get hostmatch list or get hostmatch by id  API's.
+class GetHostMatchSerializer(serializers.ModelSerializer):
+    # host_player_1=Team1PlayerSerializer(read_only=True,many=True)
+    # host_player_2=Team2PlayerSerializer(read_only=True,many=True)
+    
+    # hostmatch=HostInvitationSerializer(many=True)
+    host_score=TeamScoreSerializer(read_only=True,many=True)
+    class Meta:
+        model=HostMatch
+        fields="__all__"
 
 class HostInvitationSerializer(serializers.ModelSerializer):
-    hostmatch_id=HostMatchSerializer(read_only=True)
+
+
+    # hostmatch_id=GetHostMatchSerializer(read_only=True)      
     # user_invited=ProfileSerializer(read_only=True)
     class Meta:
         model=HostInvitation
         fields="__all__"
 
 
-#this serializer is used by get hostmatch list or get hostmatch by id  API's.
-class GetHostMatchSerializer(serializers.ModelSerializer):
-    host_player_1=Team1PlayerSerializer(read_only=True,many=True)
-    host_player_2=Team2PlayerSerializer(read_only=True,many=True)
-    host_score=TeamScoreSerializer(read_only=True,many=True)
-    # hostmatch=HostInvitationSerializer(many=True)
+class TeamScoreSerializer(serializers.ModelSerializer):
+    # host_match=GetHostMatchSerializer(read_only=True)
+    
     class Meta:
-        model=HostMatch
+        model=TeamScore
         fields="__all__"
 
 
 class GetProfileSerializer(serializers.ModelSerializer):
-    user_id=UserSerializer(read_only=True)
+    total_host_match=serializers.SerializerMethodField(method_name='total_hostmatch')
+    hostmatch_profile=HostMatchSerializer(read_only=True,many=True)
+    # user_id=UserSerializer(read_only=True)
     class Meta:
         model=Profile
         fields="__all__"
+
+    def total_hostmatch(self,obj):
+        queryset = HostMatch.objects.filter(user_id=obj.id).count()   
+        return queryset 
+
+    # def update(self,)   
+
+
+
+
+
+           
+
+    
 
     
 class ContactUsSerializer(serializers.ModelSerializer):
@@ -147,3 +167,9 @@ class ContactUsSerializer(serializers.ModelSerializer):
         def create(self,validated_data):
             C=ContactUs.objects.create(**validated_data)
             return C        
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Notification
+        fields="__all__"
+          

@@ -61,11 +61,11 @@
                             <tr>
                                 {% for profile in data %}
                                 <td>{{profile.id}}</td>
-                                <td> <p><img src="{{ profile.image.url }}" width="100px"></p></td>
-                                <td>{{profile.first_name}}</td>
+                                <td> <p><img src="{{ profile.profile_image.url }}" width="100px"></p></td>
+                                <td>{{profile.user_id.first_name}}</td>
                                 <td>{{profile.city}}</td>
                                 <td>{{profile.state}}</td>
-                                <td>{{profile.zip}}</td>
+                                <td>{{profile.zip_code}}</td>
                                 <td><a href="#" class="suspend_btn" data-toggle="modal" data-target="#exampleModalCenter">Suspend</a></td>
                             </tr>
                             {% endfor %}

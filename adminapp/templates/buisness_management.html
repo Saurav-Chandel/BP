@@ -1,9 +1,33 @@
 {% extends 'base.html' %}
 {% block content %}
 {% load static %}
+
+
+
  <!--/ sidebar  -->
+
+
+<section class="main_content dashboard_part large_header_bg">
+        <!-- menu  -->
+    <div class="container-fluid no-gutters">
+        <div class="row">
+            <div class="col-lg-12 p-0 ">
+                <div class="header_iner d-flex justify-content-between align-items-center">
+                    <h3 class="f_s_30 f_w_700" >Welcome To Beach+</h3>
+                    <div class="sidebar_icon d-lg-none">
+                        <i class="ti-menu"></i>
+                    </div>
+                    <div class="header_right d-flex justify-content-between align-items-center">
+                        <div class="profile_info">
+                            <img src="img/staf/2.png" alt="#">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!--/ menu  -->
-<div class="main_content_iner overly_inner ">
+    <div class="main_content_iner overly_inner ">
         <div class="container-fluid p-0 ">
             <!-- page title  -->
             <div class="row">
@@ -39,110 +63,13 @@
                                 <tr>
                                     {% for buisness in data %}
                                     <td>{{buisness.id}}</td>
-                                    <td> <p><img src="{{ buisness.image.url }}" width="100px"></p></td>
-                                    <td>{{buisness.name}}</td>
+                                    <td> <p><img src="{{ buisness.buisness_image.url }}" width="100px"></p></td>
+                                    <td>{{buisness.profile.user_id.first_name}}</td>
                                     <td>{{buisness.address}}</td>
-                                    <td>{{buisness.contact}}</td>
-                                    <td><a href="#" class="suspend_btn">Suspend</a></td>
-                                
+                                    <td>{{buisness.profile.contact_number}}</td>
+                                    <td><a href="/adminapp/buisness_details/{{buisness.id}}/" class="btn_1 ">View Details</a></td>
                                 </tr>
                                 {% endfor %}
-                                <!-- <tr>
-                                    <th scope="row"> 2.</a></th>
-                                    <td>
-                                        <div class="img_cover">
-                                            <img src="img/staf/1.png" class="rounded-lg me-2" alt="">
-                                        </div>
-                                    </td>
-                                    <td>Pie Burger</td>
-                                    <td>Guanajuato</td>
-                                    <td>87451 94512</td>
-                                    <td><a href="business_details.html" class="btn_1 ">View Details</a></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row"> 3.</a></th>
-                                    <td>
-                                        <div class="img_cover">
-                                            <img src="img/staf/1.png" class="rounded-lg me-2" alt="">
-                                        </div>
-                                    </td>
-                                    <td>Pie Burger</td>
-                                    <td>Guanajuato</td>
-                                    <td>87451 94512</td>
-                                    <td><a href="business_details.html" class="btn_1 ">View Details</a></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row"> 4.</a></th>
-                                    <td>
-                                        <div class="img_cover">
-                                            <img src="img/staf/1.png" class="rounded-lg me-2" alt="">
-                                        </div>
-                                    </td>
-                                    <td>Pie Burger</td>
-                                    <td>Guanajuato</td>
-                                    <td>87451 94512</td>
-                                    <td><a href="/Business/" class="btn_1 ">View Details</a></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row"> 5.</a></th>
-                                    <td>
-                                        <div class="img_cover">
-                                            <img src="img/staf/1.png" class="rounded-lg me-2" alt="">
-                                        </div>
-                                    </td>
-                                    <td>Pie Burger</td>
-                                    <td>Guanajuato</td>
-                                    <td>87451 94512</td>
-                                    <td><a href="business_details.html" class="btn_1 ">View Details</a></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row"> 6.</a></th>
-                                    <td>
-                                        <div class="img_cover">
-                                            <img src="img/staf/1.png" class="rounded-lg me-2" alt="">
-                                        </div>
-                                    </td>
-                                    <td>Pie Burger</td>
-                                    <td>Guanajuato</td>
-                                    <td>87451 94512</td>
-                                    <td><a href="business_details.html" class="btn_1 ">View Details</a></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row"> 7.</a></th>
-                                    <td>
-                                        <div class="img_cover">
-                                            <img src="img/staf/1.png" class="rounded-lg me-2" alt="">
-                                        </div>
-                                    </td>
-                                    <td>Pie Burger</td>
-                                    <td>Guanajuato</td>
-                                    <td>87451 94512</td>
-                                    <td><a href="business_details.html" class="btn_1 ">View Details</a></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row"> 8.</a></th>
-                                    <td>
-                                        <div class="img_cover">
-                                            <img src="img/staf/1.png" class="rounded-lg me-2" alt="">
-                                        </div>
-                                    </td>
-                                    <td>Pie Burger</td>
-                                    <td>Guanajuato</td>
-                                    <td>87451 94512</td>
-                                    <td><a href="business_details.html" class="btn_1 ">View Details</a></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row"> 9.</a></th>
-                                    <td>
-                                        <div class="img_cover">
-                                            <img src="img/staf/1.png" class="rounded-lg me-2" alt="">
-                                        </div>
-                                    </td>
-                                    <td>Pie Burger</td>
-                                    <td>Guanajuato</td>
-                                    <td>87451 94512</td>
-                                    <td><a href="business_details.html" class="btn_1 ">View Details</a></td>
-                                </tr> -->
                             </tbody>
                         </table>
                     </div>
@@ -151,29 +78,13 @@
             </div>
         </div>
     </div>
+
+<!-- main content part end -->
+
+
 {% endblock %}
 <!-- main content part end -->
 
 
 
-<script src="{% static 'js/jquery-3.4.1.min.js' %}"></script>
-<!-- popper js -->
-<script src="{% static 'js/popper.min.js' %}"></script>
-<!-- bootstarp js -->
-<script src="{% static 'js/bootstrap.min.js' %}"></script>
-<!-- sidebar menu  -->
-<script src="{% static 'js/metisMenu.js' %}"></script>
 
-<!-- responsive table -->
-<script src="{% static 'vendors/datatable/js/jquery.dataTables.min.js' %}"></script>
-<script src="{% static 'vendors/datatable/js/dataTables.responsive.min.js' %}"></script>
-<script src="{% static 'vendors/datatable/js/dataTables.buttons.min.js' %}"></script>
-
-<!-- scrollabe  -->
-<script src="{% static 'vendors/scroll/perfect-scrollbar.min.js' %}"></script>
-<script src="{% static 'vendors/scroll/scrollable-custom.js' %}"></script>
-
-<script src="{% static 'js/custom.js' %}"></script>
-</body>
-
-</html>

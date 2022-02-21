@@ -8,16 +8,5 @@ class Report(models.Model):
     image=models.ImageField(upload_to='report_image',blank=True,null=True)
     feedback=models.TextField(max_length=300,null=True,blank=True)
 
-
-
-class Buisness(models.Model):
-    name=models.CharField(max_length=100,null=True,blank=True)
-    image=models.ImageField(upload_to='buisness_image',blank=True,null=True)
-    address=models.CharField(max_length=100,blank=True,null=True)
-
-    def __str__(self):
-       return self.name
-
-
  
 

@@ -35,7 +35,10 @@ urlpatterns = [
     path("team_score/api/v1/get/<int:pk>/", views.GetTeamScore.as_view()),
     path("team_score/api/v1/update/<int:pk>/", views.UpdateTeamScore.as_view()),
     path("team_score/api/v1/delete/<int:pk>/", views.DeleteTeamScore.as_view()),
-
+    
+    path("notification/api/v1/update/<int:pk>/", views.CreateNotification.as_view()),
+    path("notification1/api/v1/create/", views.NotificationsAPI.as_view()),
+    
     #postman urls
     path('contact_us/',views.ContactUsAPI.as_view(),name="contactus"),
     path('about_us/',views.AboutUsAPI.as_view(),name="aboutus"),

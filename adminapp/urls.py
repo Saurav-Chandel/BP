@@ -17,6 +17,7 @@ urlpatterns = [
     path('BusinessManagement/',buisness_management,name='buisness_management'),
     path('report/',report_management,name='report_management'),
     path('UserManagement/',user_management,name='user_management'),
+    path('buisness_details/<int:pk>/',buisness_details,name='buisness_details'),
     # path('change_password/',views.Change_Password.as_view(),name='change_password'),
     path('forgot_password/',views.forgot_password.as_view(),name='forgot_password'),
     path(

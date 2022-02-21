@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import *
+from buisness.models import Buisness
 # Register your models here.
 
 class UserAdmin(admin.ModelAdmin):
@@ -45,19 +46,19 @@ class HostMatchAdmin(admin.ModelAdmin):
 class HostMatchInline(admin.TabularInline):
     model = HostMatch
     extra=1
-   
+  
+class BuisnessAdminInline(admin.TabularInline):
+    model = Buisness
+    extra=1 
+
 
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('id','profile_image', 'city', 'state','zip_code',
-    'cpf_number','contact_number','location','matchhost','matchplayed','matchwon')
+    'cpf_number','contact_number','location','matchplayed','matchwon')
 
-    inlines=[HostMatchInline,HostInvitationInline,]
+    inlines=[HostMatchInline,HostInvitationInline,BuisnessAdminInline,]
 
     
-
-
-
-
 admin.site.register(User,UserAdmin)
 admin.site.register(Profile,ProfileAdmin)
 admin.site.register(HostMatch,HostMatchAdmin)
@@ -70,6 +71,7 @@ admin.site.register(ContactUs)
 admin.site.register(AboutUs)
 admin.site.register(PrivacyPolicy)
 admin.site.register(TermsCondition)
+admin.site.register(Notification)
 
 
 

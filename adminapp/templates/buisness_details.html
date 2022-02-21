@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+
+
+
+<section class="main_content dashboard_part large_header_bg">
+    <!-- menu  -->
+<div class="container-fluid no-gutters">
+    <div class="row">
+        <div class="col-lg-12 p-0 ">
+            <div class="header_iner d-flex justify-content-between align-items-center">
+                <h3 class="f_s_30 f_w_700" >Welcome To Beach+</h3>
+                <div class="sidebar_icon d-lg-none">
+                    <i class="ti-menu"></i>
+                </div>
+                <div class="header_right d-flex justify-content-between align-items-center">
+                    <div class="profile_info">
+                        <img src="img/staf/2.png" alt="#">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--/ menu  -->
+<div class="main_content_iner overly_inner ">
+    <div class="container-fluid p-0 ">
+        <!-- page title  -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page_title_box d-flex align-items-center justify-content-between">
+                    <div class="page_title_left">
+                        <!-- <h3 class="f_s_30 f_w_700 text_white" >Dashboard</h3> -->
+                        <ol class="breadcrumb page_bradcam mb-0">
+                            <li class="breadcrumb-item"><a href="/adminapp/BusinessManagement/">Business Management </a></li>
+                            <li class="breadcrumb-item active"><a href="/adminapp/buisness_details/">Business Details</a></li>
+                            <!-- <li class="breadcrumb-item active">Sales</li> -->
+                          </ol> 
+                    </div>  
+                </div>
+            </div>
+        </div>
+        <div class="row ">
+            <div class="col-lg-12">
+                <div class="white_card">
+                    <div class="back_icon">
+                        <a href="/adminapp/BusinessManagement/">
+                            <i class="ti-arrow-left"></i>
+                        </a>
+                    </div>
+                    <!-- <h4 class="p-3 f_s_30 f_w_700">Business Details</h4> -->
+                    <div class="row px-4 pb-5">
+                        <div class="col-sm-4">
+                            <div class="business_img mb-3">
+                                <img src="{{data.buisness_image.url}}" alt="" class="img-fluid" />
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <div class="business_img_sm">
+                                        <img src="img/business_img.png" alt="" class="img-fluid" />
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="business_img_sm">
+                                        <img src="img/business_img.png" alt="" class="img-fluid" />
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="business_img_sm">
+                                        <img src="img/business_img.png" alt="" class="img-fluid" />
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                        <div class="col-sm-8 pl-5">
+                            <div class="business_details">
+                                <div class="row">
+                                    <div class="col-sm-6 mb-3">
+                                        <h5 class="mb-0">Location</h5>
+                                        <h4>{{data.profile.location}}</h4>
+                                    </div>
+                                    <div class="col-sm-6 mb-3">
+                                        <h5 class="mb-0">Contact Number</h5>
+                                        <h4>{{data.profile.contact_number}}</h4>
+                                    </div>
+                                    <div class="col-sm-6 mb-3">
+                                        <h5 class="mb-0">Tennis Courts</h5>
+                                        <h4>{{data.tennis_court}}</h4>
+                                    </div>
+                                    <div class="col-sm-6 mb-3">
+                                        <h5 class="mb-0">Address</h5>
+                                        <h4>{{data.address}}</h4>
+                                    </div>
+                                    <div class="col-sm-12 mb-4">
+                                        <h5 class="mb-0">Description</h5>
+                                        <h4>{{data.description}}</h4>
+                                    </div>
+                                    <div class="col-sm-12">
+                                      
+                                        <div class="services mb-4">
+                                            <h4 class="main_heading">Services</h4>
+
+                                            {% for i in service %}
+                                            <span>{{i.service_name}}</span>
+                                            {% endfor %} 
+                                            
+                                            
+                                        </div>
+                                        
+
+                                        <div class="">
+                                            <h4 class="main_heading">Timings</h4>
+                                            <div class="row">
+                                                <div class="col-lg-6">
+                                                    <div class="time_table">
+                                                        <h4 class="mb-1">{{data.working_days}}</h4>
+                                                        <h5 class="mb-0">{{data.working_hours}}</h5>
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-6">
+                                                    <div class="time_table">
+                                                        <h4 class="mb-1">{{data.non_working_days}}</h4>
+                                                        <h5 class="mb-0">{{data.non_working_hours}}</h5>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}    
+
+
+
+
+
+

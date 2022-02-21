@@ -6,9 +6,11 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, get_user_model,login
 from django.contrib.auth.hashers import  check_password
+from django.views.decorators.csrf import csrf_exempt
 # from rest_framework import filters, permissions, serializers, status, viewsets
 from .models import *
 from user.models import User,Profile
+from buisness.models import Buisness,Service
 
 
 def Login(request):
@@ -30,16 +32,35 @@ def Login(request):
     return render(request,'login.html',dictValues)
 
 
-
 @login_required(redirect_field_name='next', login_url='/adminapp/login/')
 def dashboard(request):
     data=Profile.objects.all()
-    return render(request,'dashboard.html',{'data':data})
+    total_users=data.count()
+    total_matches=HostMatch.objects.all().count()
+    total_buisness=Buisness.objects.all().count()
+
+    context={
+        'data':data,
+        'total_users':total_users,
+        'total_matches':total_matches,
+        'total_buisness':total_buisness
+    }
+    return render(request,'dashboard.html',context)
 
 @login_required(redirect_field_name='next', login_url='/adminapp/login/')
 def buisness_management(request):
     data=Buisness.objects.all()
     return render(request,'buisness_management.html',{'data':data})    
+
+def buisness_details(request,pk):
+    buisness=Buisness.objects.get(id=pk)
+    service=Service.objects.all()
+    context={
+        'data':buisness,
+        'service':service
+    }
+    # print(vars(data1))
+    return render(request,'buisness_details.html',context)   
 
 @login_required(redirect_field_name='next', login_url='/adminapp/login/')
 def report_management(request):
@@ -60,18 +81,28 @@ def user_management(request):
 
 from app.SendinSES import *
 from user.models import *
+
+
 class forgot_password(View):
+    @csrf_exempt
     def get(self,request):
         return render(request,'forgot_password.html') 
-
+   
+    # @csrf_exempt
     def post(self,request):
-        user_email=request.POST.get('email')
-        email_body="link is send to your email for forgot your password"
-        user=User.objects.get(email=user_email)
-        if user:
-           send_reset_password_mail(request,user_email,email_body)
-
-        return render(request,'forgot_password.html') 
+        try:
+           user_email=request.POST.get('email')
+           email_body="link is send to your email for forgot your password"
+           user=User.objects.get(email=user_email)
+           if user:
+              send_reset_password_mail(request,user_email,email_body)
+              print("mail send")
+              return HttpResponse("mail is send successfully")
+           else:
+               print("thankyou")
+               return render(request,"dashboard.html")   
+        except:
+           return HttpResponse("mail does not exist") 
 
 
 # @login_required(redirect_field_name='next', login_url='/adminapp/login/')

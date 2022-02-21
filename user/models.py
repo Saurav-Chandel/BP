@@ -97,17 +97,18 @@ class Profile(models.Model):
     cpf_number=models.CharField(max_length=100,unique=True)
     contact_number=models.CharField(max_length=15,null=True,blank=True)
     location=models.CharField(max_length=250,null=True,blank=True)
-    matchhost=models.IntegerField(blank=True,null=True,default=0)
+    hostmatch=models.CharField(max_length=100,null=True,blank=True)
     matchplayed=models.IntegerField(blank=True,null=True,default=0)
     matchwon=models.IntegerField(blank=True,null=True,default=0)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
 
-
+    # def save():
+        
     def __str__(self):
         return self.user_id.first_name
 
 class HostMatch(models.Model):
-    user_id=models.ForeignKey(Profile,on_delete=models.CASCADE)
+    user_id=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name="hostmatch_profile")
     title=models.CharField(max_length=100,blank=True,null=True)
     date=models.DateField()
     time=models.TimeField()
@@ -115,7 +116,7 @@ class HostMatch(models.Model):
     select_mode=models.CharField(max_length=100,blank=True,null=True,choices=hostmatch_selectmode_catchoice)
     status=models.CharField(max_length=200,blank=True,null=True,choices=hostmatch_status_catchoice)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
-
+ 
     def __str__(self):
         return self.user_id.user_id.first_name
 
@@ -124,6 +125,9 @@ class HostInvitation(models.Model):
     user_invited=models.ForeignKey(Profile,on_delete=models.CASCADE,null=True,blank=True,related_name='profile')
     status=models.CharField(max_length=200,choices=hostinvitation_status_catchoice,null=True,blank=True)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
+
+    def __str__(self):
+        return self.user_invited.user_id.first_name
 
 class Team1Players(models.Model):
     host_match=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='host_player_1')
@@ -138,6 +142,7 @@ class Team2Players(models.Model):
 from django.db.models.functions import Greatest
 class TeamScore(models.Model):
     host_match=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='host_score')
+    # host_invited=models.ForeignKey(HostInvitation,on_delete=models.CASCADE,null=True,blank=True)
     round=models.IntegerField()
     team1_player_score=models.IntegerField()
     team2_player_score=models.IntegerField()
@@ -158,7 +163,10 @@ class PlayersRating(models.Model):
     date_added=models.DateTimeField(default=django.utils.timezone.now)
 
 
-
+class Notification(models.Model):
+    User_id=models.ForeignKey(User,on_delete=models.CASCADE,related_name='user10')
+    Status=models.BooleanField(default=True)
+  
 
 
 class ContactUs(models.Model):

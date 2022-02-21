@@ -353,12 +353,15 @@ class GetAllProfile(APIView):
                 state=""    
     
             profile=Profile.objects.all()
+        
             if city:
                 profile=profile.filter(Q(city__icontains=city))  
             if state:
-                profile=profile.filter(Q(state__icontains=state))      
+                profile=profile.filter(Q(state__icontains=state))  
+
             if profile:
-                serializer=ProfileSerializer(profile,many=True)  
+                serializer=GetProfileSerializer(profile,many=True) 
+                print(serializer)
                 return Response({
                     'data':serializer.data,
                     'status':status.HTTP_200_OK,
@@ -419,7 +422,7 @@ class UpdateProfile(APIView):
             raise ResponseNotFound()
 
     @swagger_auto_schema(
-        operation_description="update Upcoming_Treks",
+        operation_description="update Profile",
         request_body=ProfileSerializer,
     )
     @csrf_exempt
@@ -472,7 +475,6 @@ class GetProfile(APIView):
         try:
             profile=self.get_object(pk)
             serializer=GetProfileSerializer(profile)
-            print(serializer)
             return ResponseOk(
                 {
                     "data":serializer.data,
@@ -525,7 +527,7 @@ class DeleteProfile(APIView):
                 }
             )
 from django.db.models.functions import Greatest
-
+from django.db.models import Avg
 from datetime import datetime
 class GetAllHostMatch(APIView):
     """
@@ -558,10 +560,16 @@ class GetAllHostMatch(APIView):
                             in_=openapi.IN_QUERY,
                             description='pass true if you want to get a list of match is ongoing',
                             type=openapi.TYPE_BOOLEAN,
-                            )                                                                                                              
+                            )   
+
+    host_match = openapi.Parameter('host_match',
+                            in_=openapi.IN_QUERY,
+                            description='find the TeamScore host_match_id',
+                            type=openapi.TYPE_STRING,
+                            )                                                                                                                                     
 
     @swagger_auto_schema(
-            manual_parameters=[search,date,hosted_completed,hosted_ongoing,user_id]
+            manual_parameters=[search,date,hosted_completed,hosted_ongoing,user_id,host_match]
     )
 
     @csrf_exempt
@@ -593,24 +601,61 @@ class GetAllHostMatch(APIView):
             else:
                 ongoing="" 
 
+            if data.get("host_match"):
+                host=data.get('host_match')
+            else:
+                host=""       
+
             host_match=HostMatch.objects.all()
 
+            if host:
+                host_match=host_match.filter(user_id=host)
+                print(host_match)
+                print("_______")
+                team1_score=list(HostMatch.objects.filter(user_id=host).annotate(Avg('host_score__team1_player_score')).values_list('host_score__team1_player_score__avg'))
+                print(team1_score)
+                    
+                print("_______")
+
+                team2_score=list(HostMatch.objects.filter(user_id=host).annotate(Avg('host_score__team2_player_score')).values_list('host_score__team2_player_score__avg'))
+                print(team2_score)
+
+                print("_____")
+
+                if team1_score>team2_score:
+                    host_invited=HostInvitation.objects.filter(hostmatch_id=host)
+                    print(host_invited[0])
+
+                    print("player 1 wins")
+
+                if team1_score<team2_score:
+                    host_invited=HostInvitation.objects.filter(hostmatch_id=host)
+                    print(host_invited[1])
+                    
+                    print("player 2 wins")    
+
+
+                # max_score=HostMatch.objects.filter(user_id=host).annotate(res=Greatest(Avg('host_score__team1_player_score'),(Avg('host_score__team2_player_score')))).values()
+                # print(max_score)
+                # print("____")
+            
+        
             if query:
                 host_match=host_match.filter(Q(location__icontains=query))
 
             if date:
-                host_match=host_match.filter(Q(date__icontains=date))    
-           
+                host_match=host_match.filter(Q(date__icontains=date)) 
+
             if completed:
                 date = datetime.today()
-                time = datetime.now().time() 
-                host_match=host_match.filter(user_id=user,date__lte=date,time__lte=time)
+                # time = datetime.now().time() 
+                host_match=host_match.filter(user_id=user,date__lte=date)
 
             if ongoing:
                 date = datetime.today()
-                time = datetime.now().time() 
-                host_match=host_match.filter(user_id=user,date__gte=date,time__gte=time)
-
+                # time = datetime.now().time() 
+                host_match=host_match.filter(user_id=user,date__gte=date)
+            
             if host_match:
                 serializer=GetHostMatchSerializer(host_match,many=True)
                 return ResponseOk(
@@ -644,6 +689,7 @@ class CreateHostMatch(APIView):
         serializer = HostMatchSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
+            # add=Profile.objects.filter(user_id=request.data['user_id']).update(hostmatch=hostmatch+1)
             return ResponseOk(
                 {
                     "data": serializer.data,
@@ -788,10 +834,15 @@ class GetAllHostInvitation(APIView):
     Get All HostInvitation
     """
     # permission_classes=(IsAuthenticated,)
+    host_match = openapi.Parameter('host_match',
+                            in_=openapi.IN_QUERY,
+                            description='find the invited_users who status is Attends by host_match_id',
+                            type=openapi.TYPE_STRING,
+                            )  
 
     user_invited = openapi.Parameter('user_invited',
                             in_=openapi.IN_QUERY,
-                            description='find the invitations by user_invited_id',
+                            description='enter the user_invited_id to find the invitations send by host match',
                             type=openapi.TYPE_STRING,
                             )   
 
@@ -799,7 +850,8 @@ class GetAllHostInvitation(APIView):
                             in_=openapi.IN_QUERY,
                             description='pass true if you want to get a list of match is completed and attended also',
                             type=openapi.TYPE_BOOLEAN,
-                            )  
+                            )
+
     atttend_ongoing = openapi.Parameter('ongoing',
                             in_=openapi.IN_QUERY,
                             description='pass true if you want to get a list of match is ongoing and attended also',
@@ -807,7 +859,7 @@ class GetAllHostInvitation(APIView):
                             )                          
                           
     @swagger_auto_schema(
-            manual_parameters=[user_invited,attend_completed,atttend_ongoing]
+            manual_parameters=[host_match,user_invited,attend_completed,atttend_ongoing]
     )
 
     @csrf_exempt
@@ -818,6 +870,11 @@ class GetAllHostInvitation(APIView):
                 user_invited=data.get('user_invited')
             else:
                 user_invited=""
+
+            if data.get('host_match'):     
+                host_match=data.get('host_match')
+            else:
+                host_match=""    
 
             if data.get("complete"):
                 completed=data.get('complete')
@@ -830,24 +887,60 @@ class GetAllHostInvitation(APIView):
                 ongoing=""        
 
             host_invitation=HostInvitation.objects.all()
+        
+            if host_match:
+                host_invitation=host_invitation.filter(hostmatch_id=host_match,status='Attend')
+
+                print(host_match)
+                team1_score=list(HostMatch.objects.filter(user_id=host_match).annotate(Avg('host_score__team1_player_score')).values_list('host_score__team1_player_score__avg'))
+                print(team1_score)
+
+                print("_______")
+
+                team2_score=list(HostMatch.objects.filter(user_id=host_match).annotate(Avg('host_score__team2_player_score')).values_list('host_score__team2_player_score__avg'))
+                print(team2_score)
+
+                print("_____")
+
+                if team1_score>team2_score:
+                    print(host_invitation[0])
+                    # print(host_invitation.count())
+                    print("player 1 wins")
+                    # print(host_match[0])
+
+                if team1_score<team2_score:
+                    print(host_invitation[1])
+                    # print(host_invitation.count())
+                    print("player 2 wins")
+                    # print(host_match[1])
 
             if user_invited:
                 host_invitation=host_invitation.filter(user_invited=user_invited)
                 if completed:
                     date = datetime.today()
-                    time = datetime.now().time() 
+                    # time = datetime.now().time() 
                     host_invitation=HostInvitation.objects.filter(user_invited=user_invited,status='Attend').values('hostmatch_id')
-                    host_match=HostMatch.objects.filter(id__in=host_invitation,date__lte=date,time__lte=time).values()
+                    print(host_invitation)
+                    host_match=HostMatch.objects.filter(id__in=host_invitation,date__lte=date).values()
+                    print(host_match)
+
+                    #total match played by player.
+                    match_played=HostInvitation.objects.filter(user_invited=user_invited,status='Attend').values()
+
+                    #update the value of matchplayed in profile table.
+                    Profile.objects.filter(user_id=user_invited).update(matchplayed=match_played.count())
+
                     return Response({
+                        'match_played':match_played.count(),
                         'data':host_match,
                         'msg':'MyAttendingCompletedMatches List',
                         'status':200
                             })
                 if ongoing:
                     date = datetime.today()
-                    time = datetime.now().time() 
+                    # time = datetime.now().time() 
                     host_invitation=HostInvitation.objects.filter(user_invited=user_invited,status='Attend').values('hostmatch_id')
-                    host_match=HostMatch.objects.filter(id__in=host_invitation,date__gte=date,time__gte=time).values()
+                    host_match=HostMatch.objects.filter(id__in=host_invitation,date__gte=date).values()
                     print(host_match)
                     return Response({
                         'data':host_match,
@@ -867,8 +960,7 @@ class GetAllHostInvitation(APIView):
             else:
                 return Response({'msg':'hostinvitation does not found'})
         except:
-            return Response({'msg':'hostinvitation does not found'})    
-
+            return Response({'msg':'hostinvitation1 does not found'})    
 
 
 class CreateHostInvitation(APIView):
@@ -878,7 +970,6 @@ class CreateHostInvitation(APIView):
     
     permission_classes=(IsAuthenticated,)
     parser_classes = (FormParser, MultiPartParser)
-
 
     @swagger_auto_schema(
         operation_description="create HostInvitation",
@@ -906,8 +997,6 @@ class CreateHostInvitation(APIView):
                     "message": "HostInvitation is not valid",
                 }
             )
-
-
 
 class GetHostInvitation(APIView):
     """
@@ -941,9 +1030,6 @@ class GetHostInvitation(APIView):
                     "message": "HostInvitation Does Not Exist",
                 }
             )
-
-
-
 
 class UpdateHostInvitation(APIView):
     """
@@ -1029,8 +1115,6 @@ class DeleteHostInvitation(APIView):
             )
 
 
-
-
 #Team Score API's
 class GetAllTeamScore(APIView):
     """
@@ -1062,43 +1146,46 @@ class GetAllTeamScore(APIView):
             else:
                 host_match=""
 
-
             if data.get('total_score'):
                 total_score=data.get('total_score')
             else:
                 total_score=""    
 
-            
-           
-            
             team_score=TeamScore.objects.all()
           
             if not host_match:
-                print("______")
                 # result=TeamScore.objects.annotate(res=Greatest('team1_player_score','team2_player_score')).values()
                 # print(result)
                 dictV['msg']="enter a hostmatch_id to get a final result"
 
-            if host_match and total_score:
+
+            if host_match:
                 team_score=team_score.filter(host_match=host_match)
+                p1_result=team_score.annotate(Avg('team1_player_score'))
+                print(vars(p1_result[0]))
+                p2_result=team_score.annotate(Avg('team2_player_score'))
+                print(vars(p2_result[0]))
+
+
+                # team_score=team_score.filter(host_match=host_match)
                 # print(team_score)
-                p1_result=team_score.filter(host_match=host_match,team1_player_score=total_score)
+                # p1_result=team_score.filter(host_match=host_match,team1_player_score=total_score)
                 # print(p1_result)
-                p2_result=team_score.filter(host_match=host_match,team2_player_score=total_score)
+                # p2_result=team_score.filter(host_match=host_match,team2_player_score=total_score)
                 # print(p2_result)
 
-                if len(p1_result)>len(p2_result):
-                    dictV['final_result']="player1 wins"
-            
-                if len(p1_result)<len(p2_result):
-                    dictV['final_result']="player2 wins"
+                # if len(p1_result)>len(p2_result):
+                #     dictV['final_result']="player1 wins"
+                    
+                # if len(p1_result)<len(p2_result):
+                #     dictV['final_result']="player2 wins"
 
             if team_score:
                 serializer=TeamScoreSerializer(team_score,many=True)  
         
                 return Response({
                     'data':serializer.data,
-                    "final_result":dictV,
+                    "winner":dictV,
                     'status':status.HTTP_200_OK,
                     'msg':'list of Team_Score'
                 })                 
@@ -1179,9 +1266,11 @@ class GetTeamScore(APIView):
             player2=team_score.team2_player_score
             dictV=dict()
             if player1>player2:
-                dictV['result']="player1 wins"
+                dictV['result_']="player1 wins"
+                dictV['result']="player2 lose"
             else:   
-                dictV['result']="player2 wins"
+                dictV['result_']="player2 wins"
+                dictV['result']="player1 loss"
     
             # print(vars(team_score))
 
@@ -1274,6 +1363,8 @@ class DeleteTeamScore(APIView):
     Delete TeamScore
     """
     permission_classes=(IsAuthenticated,)
+    parser_classes = (FormParser, MultiPartParser)
+
 
     @csrf_exempt
     def get_object(self, pk):
@@ -1376,3 +1467,65 @@ class TermsConditionAPI(generics.GenericAPIView):
             'msg':'Terms Condition',
             'status':200
         })                      
+
+class CreateNotification(APIView):
+    """
+    Create Notification
+    """
+    
+    # permission_classes=(IsAuthenticated,)
+    parser_classes = (FormParser, MultiPartParser)
+
+    def get_object(self, pk):
+        try:
+            return Notification.objects.get(pk=pk)
+        except Notification.DoesNotExist:
+            raise ResponseNotFound()
+
+    @swagger_auto_schema(
+        operation_description="create Notification",
+        request_body=NotificationSerializer,
+    )
+    @csrf_exempt
+    def put(self,request,pk):
+        try:
+            notification = self.get_object(pk)
+            print(notification)
+            serializer = NotificationSerializer(notification, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return ResponseOk(
+                    {
+                        "data": serializer.data,
+                        "code": status.HTTP_200_OK,
+                        "message": "Notification updated successfully",
+                    }
+                )
+            else:
+                return ResponseBadRequest(
+                    {
+                        "data": serializer.errors,
+                        "code": status.HTTP_400_BAD_REQUEST,
+                        "message": "Notification Not valid",
+                    }
+                )
+        except:
+            return ResponseBadRequest(
+                {
+                    "data": None,
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Notification Does Not Exist",
+                }
+            )
+
+
+class NotificationsAPI(generics.GenericAPIView):
+    # permission_classes = (IsAuthenticated,)
+    def post(self, request, *args, **kwargs):
+        n=Notification.objects.filter(User_id=request.POST['User_id'])
+        n.update(Status=request.POST['Status'])
+        return Response({
+        "data":{"Notifications": n.values('Status','User_id')[0:]},
+        "msg":'Notifications Updated successfully.',
+        "status":200
+        })
