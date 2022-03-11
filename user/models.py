@@ -1,9 +1,9 @@
 import datetime
-
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from django.utils.timezone import now
 import django
+# from buisness.models import Buisness
 # from app import choices
 
 # Create your models here.
@@ -25,6 +25,10 @@ hostinvitation_status_catchoice=(
 TOKEN_TYPE_CHOICES = (
     ("verification", "Email Verification"),
     ("pwd_reset", "Password Reset"),
+)
+role = (
+    ("user", "user"),
+    ("buisness", "buisness"),
 )
 
 class AppUserManager(UserManager):
@@ -55,9 +59,27 @@ class AppUserManager(UserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('username', email)
+
+        try:
+            user_type=UserType.objects.get(role="superuser")
+        except:
+            user_type=UserType.objects.create(role="superuser")
+        extra_fields.setdefault('user_type', user_type)
+        # try:
+        #     buisness=Buisness.objects.get(buisness_name="Buisness")
+        # except:
+        #     buisness=Buisness.objects.create(buisness_name="Buisness")    
 
         user = self._create_user(email, password, **extra_fields)
         return user
+
+class UserType(models.Model):
+    role=models.CharField(max_length=100,blank=True,null=True)
+    # slug=AutoslugField(populate_from=["role"])
+   
+    def __str__(self):
+        return self.role
 
 
 class User(AbstractUser):
@@ -67,6 +89,9 @@ class User(AbstractUser):
     last_name = models.CharField(
         max_length=200, default=None, null=True, blank=True
     )
+    # user_type=models.CharField(max_length=100,choices=role,blank=True,null=True)
+    user_type=models.ForeignKey(UserType,on_delete=models.CASCADE,related_name='user_type',null=True,blank=True)
+    # user_buisness=models.ForeignKey(Buisness,on_delete=models.CASCADE,blank=True,null=True)
     email=models.EmailField(unique=True,null=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -74,9 +99,12 @@ class User(AbstractUser):
 
     manager = AppUserManager()
 
+    USERNAME_FIELD = 'email'
+
+    REQUIRED_FIELDS = ['first_name']
+
     def __str__(self):
         return self.username        
-
 
 class Token(models.Model):
     token = models.CharField(max_length=300)
@@ -87,14 +115,15 @@ class Token(models.Model):
     created_on = models.DateTimeField(default=now, null=True, blank=True)
     expired_on = models.DateTimeField(default=now, null=True, blank=True)
 
- 
+
 class Profile(models.Model):
-    user_id=models.OneToOneField(User,on_delete=models.CASCADE,related_name="profile",null=True,blank=True)
+    user_id=models.OneToOneField(User,on_delete=models.CASCADE,related_name="profile",blank=True,null=True)
     profile_image = models.ImageField(upload_to ='media',null=True,blank=True)
     city=models.CharField(max_length=100,blank=True,null=True)
     state=models.CharField(max_length=100,blank=True,null=True)
+    country=models.CharField(max_length=100,blank=True,null=True)
     zip_code=models.CharField(max_length=100,blank=True,null=True)
-    cpf_number=models.CharField(max_length=100,unique=True)
+    cpf_number=models.CharField(max_length=100,unique=True,blank=True,null=True)
     contact_number=models.CharField(max_length=15,null=True,blank=True)
     location=models.CharField(max_length=250,null=True,blank=True)
     hostmatch=models.CharField(max_length=100,null=True,blank=True)
@@ -107,18 +136,32 @@ class Profile(models.Model):
     def __str__(self):
         return self.user_id.first_name
 
+from geopy.geocoders import Nominatim
+
+
 class HostMatch(models.Model):
-    user_id=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name="hostmatch_profile")
+    profile_id=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name="hostmatch_profile")
     title=models.CharField(max_length=100,blank=True,null=True)
     date=models.DateField()
     time=models.TimeField()
     location=models.CharField(max_length=200,null=True,blank=True)
     select_mode=models.CharField(max_length=100,blank=True,null=True,choices=hostmatch_selectmode_catchoice)
     status=models.CharField(max_length=200,blank=True,null=True,choices=hostmatch_status_catchoice)
+    pincode=models.CharField(max_length=100,null=True,blank=True)
+    lat=models.CharField(max_length=100,null=True,blank=True)
+    long=models.CharField(max_length=100,null=True,blank=True)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
+
+    def save(self,*args,**kwargs):
+        geolocator = Nominatim(user_agent="IN")
+        location=geolocator.geocode(self.pincode)
+        self.lat=location.latitude
+        self.long=location.longitude
+        super(HostMatch,self).save(*args,**kwargs)
+
  
     def __str__(self):
-        return self.user_id.user_id.first_name
+        return self.profile_id.user_id.first_name
 
 class HostInvitation(models.Model):
     hostmatch_id=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='hostmatch')
@@ -167,8 +210,6 @@ class Notification(models.Model):
     User_id=models.ForeignKey(User,on_delete=models.CASCADE,related_name='user10')
     Status=models.BooleanField(default=True)
   
-
-
 class ContactUs(models.Model):
     user_id=models.OneToOneField(User,on_delete=models.CASCADE,related_name="contact_us")
     first_name=models.CharField(max_length=100,null=True,blank=True)
@@ -179,8 +220,8 @@ class ContactUs(models.Model):
     def __str__(self):
         return self.first_name
 
-
 class AboutUs(models.Model):
+    user_id=models.OneToOneField(User,on_delete=models.CASCADE,related_name="aboutus")
     about=models.CharField(max_length=100,blank=True,null=True)
     date_added=models.DateTimeField(default=django.utils.timezone.now)  
 
@@ -198,10 +239,9 @@ class PrivacyPolicy(models.Model):
         return self.policy 
 
 class TermsCondition(models.Model):
+    user_id=models.OneToOneField(User,on_delete=models.CASCADE,null=True)
     terms=models.CharField(max_length=100,blank=True,null=True)
     date_added=models.DateTimeField(default=django.utils.timezone.now)  
 
     def __str__(self):
         return self.terms 
-
-

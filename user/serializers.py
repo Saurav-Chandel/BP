@@ -10,29 +10,64 @@ from django.utils.encoding import (
     smart_str,
 )
 
+from buisness.models import Buisness
+from buisness.serializers import BuisnessSerializer
+
 class UserSignupSerializer(serializers.ModelSerializer):
+    # buisness_owner=BuisnessSerializer(read_only=True)
     class Meta:
         model=User
-        fields=("id","username","first_name","password","email")
-        
+        fields="__all__"
+
+    # def validate(self,validated_data):
+    #     username = validated_data.get('username')
+    #     password = validated_data.get('password')
+
+    #     if 
+  
+
     def create(self, validated_data):
         user = User.objects.create(
             username=validated_data['username'],
             email=validated_data['email'],
             first_name=validated_data['first_name'],
+            user_type=validated_data['user_type']
         )
         user.set_password(validated_data['password'])
         user.save()
-        return user   
+        print(user)
+        print(user.user_type.id)
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=User
-        fields = "__all__"
-        # fields=("email","password")
-        extra_kwargs = {
-            "password": {"write_only": True},
-        }         
+        if user.user_type.id==2:
+           print("___________")
+           profile_obj=Profile.objects.create(user_id=user)
+           profile_obj.save()
+
+        if user.user_type.id==3:
+            buisness_obj=Buisness.objects.create(buisness_owner=user)
+            buisness_obj.save()
+        
+        return user
+
+        # if User.objects.get(user_type__role="buisness",id=):
+        #    print("______________")
+        #    buisness_obj=Buisness.objects.create(buisness_owner=user)
+        #    buisness_obj.save()
+        # return user   
+
+    # def create(self,validated_data):
+    #     u=User.objects.create_user(**validated_data)
+    #     return u
+
+# class UserSerializer(serializers.ModelSerializer):
+
+#     class Meta:
+#         model=User
+#         fields = "__all__"
+#         # fields=("email","password")
+#         extra_kwargs = {
+#             "password": {"write_only": True},
+#         }         
 
 class SetNewPasswordSerializer(serializers.Serializer):
     password = serializers.CharField(
@@ -69,8 +104,8 @@ class TeamScoreSerializer(serializers.ModelSerializer):
     class Meta:
         model=TeamScore
         fields="__all__"
-        
-        
+
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     # user_id=UserSerializer(read_only=True)
@@ -78,6 +113,35 @@ class ProfileSerializer(serializers.ModelSerializer):
         model=Profile
         fields="__all__"
         # exclude=""
+
+
+class UserSerializer(serializers.ModelSerializer):
+    profile=ProfileSerializer()
+    class Meta:
+        model=User
+        fields = "__all__"
+        # exclude=('last_login',)
+        # fields=("email","password")
+        extra_kwargs = {
+            "password": {"write_only": True},
+        }         
+
+class UserTypeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=UserType
+        fields = ("role",)
+
+class UserSerializer1(serializers.ModelSerializer):
+    user_type=UserTypeSerializer()
+    class Meta:
+        model=User
+        fields = ("user_type",)
+        # exclude=('last_login',)
+        # fields=("email","password")
+        extra_kwargs = {
+            "password": {"write_only": True},
+        } 
 
 
 class Team1PlayerSerializer(serializers.ModelSerializer):
@@ -140,7 +204,7 @@ class TeamScoreSerializer(serializers.ModelSerializer):
 class GetProfileSerializer(serializers.ModelSerializer):
     total_host_match=serializers.SerializerMethodField(method_name='total_hostmatch')
     hostmatch_profile=HostMatchSerializer(read_only=True,many=True)
-    # user_id=UserSerializer(read_only=True)
+    user_id=UserSerializer(read_only=True)
     class Meta:
         model=Profile
         fields="__all__"
@@ -153,20 +217,24 @@ class GetProfileSerializer(serializers.ModelSerializer):
 
 
 
-
-
-           
-
-    
-
     
 class ContactUsSerializer(serializers.ModelSerializer):
+    user_id=UserSerializer1()
     class Meta:
         model=ContactUs
         fields="__all__"
-        def create(self,validated_data):
-            C=ContactUs.objects.create(**validated_data)
-            return C        
+    def create(self,validated_data):
+        C=ContactUs.objects.create(**validated_data)
+        return C        
+
+class AboutUsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=AboutUs
+        fields="__all__"
+    def create(self,validated_data):
+        C=AboutUs.objects.create(**validated_data)
+        return C 
+
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:

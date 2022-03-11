@@ -41,6 +41,7 @@ urlpatterns = [
     
     #postman urls
     path('contact_us/',views.ContactUsAPI.as_view(),name="contactus"),
+    path('list_contact_us/',views.getContactUsAPI.as_view(),name="contactus"),
     path('about_us/',views.AboutUsAPI.as_view(),name="aboutus"),
     path('privacy_policy/',views.PrivacyPolicyAPI.as_view(),name="privacypolicy"),
     path('terms_conditions/',views.TermsConditionAPI.as_view(),name="termsconditions"),

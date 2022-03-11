@@ -1,4 +1,3 @@
-
 from ssl import PROTOCOL_TLSv1_1
 from django.shortcuts import redirect, render
 from django.shortcuts import render
@@ -49,18 +48,21 @@ class SignUpView(APIView):
                 "first_name": openapi.Schema(type=openapi.TYPE_STRING),
                 "email": openapi.Schema(type=openapi.TYPE_STRING),
                 "password": openapi.Schema(type=openapi.TYPE_STRING),
+                'user_type':openapi.Schema(type=openapi.TYPE_INTEGER , description="enter user_type_id"),
             },
         ),
     )
+
     @csrf_exempt
     def post(self, request):
         data = request.data
-        data["username"] = data['email']
+        username=str(data.get('email')) + "_" + str(data.get("user_type"))
+        data["username"] = username
 
         if User.objects.filter(email=data["email"]).exists():
             return ResponseBadRequest(
                 {
-                    "data": {"email": ["Email Already Exist"]},
+                    "data": {"email": "Email Already Exist"},
                     "code": status.HTTP_400_BAD_REQUEST,
                     "message": "Serializer error",
                 }
@@ -129,49 +131,50 @@ class LoginView(APIView):
                         "code":status.HTTP_400_BAD_REQUEST,
                         "message":"you are suspened user"
                     }
-                )    
-        except:    
-            return ResponseBadRequest({
+                )   
+            else:
+                return ResponseBadRequest({
                 "msg":'user not found'
-            })    
+            })
 
-        if user_object.check_password(password):
-            print("password match")
-            token = RefreshToken.for_user(user_object)
-            print(token)
-            if not Token.objects.filter(
-                token_type="access_token", user_id=user_object.id
-            ).exists():
-                Token.objects.create(
-                    user_id=user_object.id,
-                    token=str(token.access_token),
-                    token_type="access_token",
+        except:    
+            if user_object.check_password(password):
+                print("password match")
+                token = RefreshToken.for_user(user_object)
+                print(token)
+                if not Token.objects.filter(
+                    token_type="access_token", user_id=user_object.id
+                ).exists():
+                    Token.objects.create(
+                        user_id=user_object.id,
+                        token=str(token.access_token),
+                        token_type="access_token",
+                    )
+                else:
+                    Token.objects.filter(
+                        user_id=user_object.id, token_type="access_token"
+                    ).update(token=str(token.access_token))
+                serializer = UserSerializer(user_object)
+    
+                return Response(
+                    {
+                        "data": serializer.data,
+                        "access_token": str(token.access_token),
+                        "refresh_token": str(token),
+                        "code": status.HTTP_200_OK,
+                        "message": "Login SuccessFully",
+                    },
+                    status=status.HTTP_200_OK,
                 )
             else:
-                Token.objects.filter(
-                    user_id=user_object.id, token_type="access_token"
-                ).update(token=str(token.access_token))
-            serializer = UserSerializer(user_object)
-
-            return Response(
-                {
-                    "data": serializer.data,
-                    "access_token": str(token.access_token),
-                    "refresh_token": str(token),
-                    "code": status.HTTP_200_OK,
-                    "message": "Login SuccessFully",
-                },
-                status=status.HTTP_200_OK,
-            )
-        else:
-            return ResponseBadRequest(
-                {
-                    "data": "wrong credentials",
-                    "code": status.HTTP_400_BAD_REQUEST,
-                    "message": "Serializer error",
-                }
-            )          
-
+                return ResponseBadRequest(
+                    {
+                        "data": "wrong credentials",
+                        "code": status.HTTP_400_BAD_REQUEST,
+                        "message": "Serializer error",
+                    }
+                )          
+    
 
 class RequestPasswordResetEmailView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -211,7 +214,7 @@ class RequestPasswordResetEmailView(APIView):
                 "user:forgot-password-confirm",
                 kwargs={"uidb64": uidb64, "token": token},
             )
-
+    
             absurl = (
                 "http://"
                 + current_site
@@ -385,14 +388,21 @@ class CreateProfile(APIView):
         operation_description="create Profile",
         request_body=ProfileSerializer,
     )
+
     @csrf_exempt
     def post(self, request):
         serializer = ProfileSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            user_obj=serializer.save()
+            
+            user_obj=User.objects.filter(id=user_obj.id)[0]
+            user_serializer=UserSerializer(user_obj)
+            print(user_serializer)
+
             return ResponseOk(
                 {
-                    "data": serializer.data,
+                    "data": user_serializer.data,
+                    # "user_id":GetProfileSerializer(),
                     "code": status.HTTP_200_OK,
                     "message": "Profile created succesfully",
                 }
@@ -842,7 +852,7 @@ class GetAllHostInvitation(APIView):
 
     user_invited = openapi.Parameter('user_invited',
                             in_=openapi.IN_QUERY,
-                            description='enter the user_invited_id to find the invitations send by host match',
+                            description='find the invitations send by host match by the user_invited_id  ',
                             type=openapi.TYPE_STRING,
                             )   
 
@@ -874,7 +884,8 @@ class GetAllHostInvitation(APIView):
             if data.get('host_match'):     
                 host_match=data.get('host_match')
             else:
-                host_match=""    
+                host_match="" 
+            print(host_match)       
 
             if data.get("complete"):
                 completed=data.get('complete')
@@ -890,16 +901,15 @@ class GetAllHostInvitation(APIView):
         
             if host_match:
                 host_invitation=host_invitation.filter(hostmatch_id=host_match,status='Attend')
+                print(host_invitation)
 
-                print(host_match)
-                team1_score=list(HostMatch.objects.filter(user_id=host_match).annotate(Avg('host_score__team1_player_score')).values_list('host_score__team1_player_score__avg'))
+                team1_score=list(HostMatch.objects.filter(profile_id=host_match).annotate(Avg('host_score__team1_player_score')).values_list('host_score__team1_player_score__avg'))
                 print(team1_score)
-
                 print("_______")
-
-                team2_score=list(HostMatch.objects.filter(user_id=host_match).annotate(Avg('host_score__team2_player_score')).values_list('host_score__team2_player_score__avg'))
+             
+                team2_score=list(HostMatch.objects.filter(profile_id=host_match).annotate(Avg('host_score__team2_player_score')).values_list('host_score__team2_player_score__avg'))
                 print(team2_score)
-
+                
                 print("_____")
 
                 if team1_score>team2_score:
@@ -912,8 +922,8 @@ class GetAllHostInvitation(APIView):
                     print(host_invitation[1])
                     # print(host_invitation.count())
                     print("player 2 wins")
-                    # print(host_match[1])
-
+                    print(host_match[1])
+              
             if user_invited:
                 host_invitation=host_invitation.filter(user_invited=user_invited)
                 if completed:
@@ -933,7 +943,7 @@ class GetAllHostInvitation(APIView):
                     return Response({
                         'match_played':match_played.count(),
                         'data':host_match,
-                        'msg':'MyAttendingCompletedMatches List',
+                        'msg':'My Attending or Completed Matches List',
                         'status':200
                             })
                 if ongoing:
@@ -944,11 +954,12 @@ class GetAllHostInvitation(APIView):
                     print(host_match)
                     return Response({
                         'data':host_match,
-                        'msg':'MyAttendingOngoingMatches List',
+                        'msg':'My Attending or Ongoing Matches List',
                         'status':200
                             })
             
             if host_invitation:
+        
                 serializer=HostInvitationSerializer(host_invitation,many=True)
                 return ResponseOk(
                     {
@@ -1393,14 +1404,6 @@ class DeleteTeamScore(APIView):
                 }
             )
 
-
-
-
-
-
-
-
-
 # class CreateProfileAPI(generics.GenericAPIView):
 #     permission_classes = [permissions.IsAuthenticated]
 #     serializer_class=ProfileSerializer
@@ -1426,28 +1429,45 @@ class ResetPasswordAppAPI(generics.GenericAPIView):
         u.save()
         return Response({"msg":'Password Updated.',"status":200})
 
-
-
 class ContactUsAPI(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    
+    # permission_classes = [permissions.IsAuthenticated]
     serializer_class=ContactUsSerializer
     def post(self,request,*args,**kwargs):
-        serializer=self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        RA=serializer.save()
-        return Response({'msg':'ContactUs information saved Successfully','status':200})   
+        user_id=request.data.get('user_id')
+        if user_id:
+            serializer=ContactUsSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"data":serializer.data,
+                                "status":status.HTTP_200_OK,
+                                "msg":"contact us created successfully"})
+            return Response({"msg":"User_id is already exists"})    
 
+        return Response({"msg":"Enter a user _id"})   
+
+class getContactUsAPI(generics.GenericAPIView):
+    # permission_classes = [permissions.IsAuthenticated]
+    serializer_class=ContactUsSerializer
+    def get(self,request,*args,**kwargs):
+        contact_us=ContactUs.objects.all()
+        serializer=ContactUsSerializer(contact_us,many=True)
+        return Response({"data":serializer.data,
+                        "status":status.HTTP_200_OK,
+                         "msg":"get list of contact us "})        
 
 class AboutUsAPI(generics.GenericAPIView):
-    permission_classes = [permissions.IsAuthenticated]
-    def post(self,request,*args,**kwargs):
+    # permission_classes = [permissions.IsAuthenticated]
+    def get(self,request,*args,**kwargs):
+
+        about_us=AboutUs.objects.all()
+        serializer=AboutUsSerializer(about_us,many=True)
+       
         return Response({
-            'data':{'text':AboutUs.objects.all().values()},
+            'data':serializer.data,
             'msg':'About Us',
             'status':200
-        })
-                     
+        })      
+    
 
 class PrivacyPolicyAPI(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -1466,13 +1486,13 @@ class TermsConditionAPI(generics.GenericAPIView):
             'data':{'text':TermsCondition.objects.all().values()},
             'msg':'Terms Condition',
             'status':200
-        })                      
+        })
+
 
 class CreateNotification(APIView):
     """
     Create Notification
     """
-    
     # permission_classes=(IsAuthenticated,)
     parser_classes = (FormParser, MultiPartParser)
 
