@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import *
 from user.serializers import *
 from rest_framework.response import Response
-
+from rest_framework.validators import UniqueTogetherValidator
 
 class BuisnessImagesSerializer(serializers.ModelSerializer):
 
@@ -13,35 +13,36 @@ class BuisnessImagesSerializer(serializers.ModelSerializer):
 
 class BuisnessSerializer(serializers.ModelSerializer):
     # buisness_images=BuisnessImagesSerializer(many=True,required=False)
+
     # buisness_owner=UserSerializer1(read_only=True)
     # buisness_imagess = serializers.ListField(child=serializers.ImageField(allow_empty_file=True))
     # images = serializers.ListField(child=serializers.ImageField(allow_empty_file=True))
 
     class Meta:
         model=Buisness
-        fields=('id','buisness_owner','buisness_name','tennis_court','address','description','lat','long','pin_code','buisness_images',)
+        fields=('id','user_id','buisness_name','cpf_number','location','tennis_court','address','description','lat','long','buisness_images',)
 
-    def create(self,validated_data):
-        buisness_owner=validated_data.get('buisness_owner')
-        buisness_user=buisness_owner.user_type.role
+    # def create(self,validated_data):
+    #     buisness_owner=validated_data.get('buisness_owner')
+    #     buisness_user=buisness_owner.user_type.role
 
-        if buisness_user=='Buisness User':
-            create_buisness=Buisness.objects.create(**validated_data)
+    #     if buisness_user=='Buisness User':
+    #         create_buisness=Buisness.objects.create(**validated_data)
     
-            try:
-                # try to get and save images (if any)
-                images_data = dict((self.context['request'].FILES).lists()).get('buisness_images', None)
-                print(images_data)
-                for img in images_data:
-                    print(img)
-                    print(type(img))
-                    BuisnessImages.objects.create(buisness=create_buisness,buisness_images=img)
-            except:
-                # if no images are available - create using default image
-                BuisnessImages.objects.create(buisness=create_buisness)
-            return create_buisness 
-        else:
-            raise serializers.ValidationError("Not a buisness user") 
+    #         try:
+    #             # try to get and save images (if any)
+    #             images_data = dict((self.context['request'].FILES).lists()).get('buisness_images', None)
+    #             print(images_data)
+    #             for img in images_data:
+    #                 print(img)
+    #                 print(type(img))
+    #                 BuisnessImages.objects.create(buisness=create_buisness,buisness_images=img)
+    #         except:
+    #             # if no images are available - create using default image
+    #             BuisnessImages.objects.create(buisness=create_buisness)
+    #         return create_buisness 
+    #     else:
+    #         raise serializers.ValidationError("Not a buisness user") 
 
     def clear_existing_images(self, instance):
 
@@ -66,7 +67,21 @@ class BuisnessSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data) 
 
 
-    
+
+class BuisnessHourSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=BuisnessHours
+        fields="__all__"  
+
+        #through django inbuilt validation
+        
+        # validators = [
+        # UniqueTogetherValidator(
+        #    queryset=BuisnessHours.objects.all(),
+        #    fields=['day']
+        #  )
+        # ]
+
 
         
 

@@ -1,3 +1,4 @@
+from this import s
 from rest_framework import serializers
 from .models import *
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -12,6 +13,8 @@ from django.utils.encoding import (
 
 from buisness.models import Buisness
 from buisness.serializers import BuisnessSerializer
+from django.db.models import Q,F
+
 
 class UserSignupSerializer(serializers.ModelSerializer):
     # buisness_owner=BuisnessSerializer(read_only=True)
@@ -39,12 +42,12 @@ class UserSignupSerializer(serializers.ModelSerializer):
         print(user.user_type.id)
 
         if user.user_type.id==2:
-           print("___________")
            profile_obj=Profile.objects.create(user_id=user)
+           print(profile_obj)
            profile_obj.save()
 
         if user.user_type.id==3:
-            buisness_obj=Buisness.objects.create(buisness_owner=user)
+            buisness_obj=Buisness.objects.create(user_id=user)
             buisness_obj.save()
         
         return user
@@ -116,6 +119,8 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    # host_match=serializers.SerializerMethodField(method_name='total_hostmatch')
+
     profile=ProfileSerializer()
     class Meta:
         model=User
@@ -124,10 +129,18 @@ class UserSerializer(serializers.ModelSerializer):
         # fields=("email","password")
         extra_kwargs = {
             "password": {"write_only": True},
-        }         
+        }   
+
+    # def total_hostmatch(self,obj):  #obj is a User instances(objects)
+    #     print(obj.id,obj)
+    #     queryset = Profile.objects.filter(user_id=obj.id).aggregate(Count('user_id'))   
+    #     print(queryset)
+    #     print("_)__))__")
+    #     a=Profile.objects.filter(user_id=obj.id).update(hostmatch=queryset)
+    #     print(a)
+    #     return queryset           
 
 class UserTypeSerializer(serializers.ModelSerializer):
-
     class Meta:
         model=UserType
         fields = ("role",)
@@ -176,8 +189,8 @@ class HostMatchSerializer(serializers.ModelSerializer):
 class GetHostMatchSerializer(serializers.ModelSerializer):
     # host_player_1=Team1PlayerSerializer(read_only=True,many=True)
     # host_player_2=Team2PlayerSerializer(read_only=True,many=True)
-    
     # hostmatch=HostInvitationSerializer(many=True)
+
     host_score=TeamScoreSerializer(read_only=True,many=True)
     class Meta:
         model=HostMatch
@@ -200,24 +213,43 @@ class TeamScoreSerializer(serializers.ModelSerializer):
         model=TeamScore
         fields="__all__"
 
-
-class GetProfileSerializer(serializers.ModelSerializer):
-    total_host_match=serializers.SerializerMethodField(method_name='total_hostmatch')
-    hostmatch_profile=HostMatchSerializer(read_only=True,many=True)
-    user_id=UserSerializer(read_only=True)
+class TeamScoreSerializer(serializers.ModelSerializer):
+    
     class Meta:
-        model=Profile
+        model=PlayersRating
         fields="__all__"
 
-    def total_hostmatch(self,obj):
-        queryset = HostMatch.objects.filter(user_id=obj.id).count()   
+
+from django.db.models import Avg,Count
+class GetProfileSerializer(serializers.ModelSerializer):
+    total_host_match=serializers.SerializerMethodField(method_name='total_hostmatch')
+    rating1=serializers.SerializerMethodField(method_name='avg_rating')
+
+    # hostmatch_profile=HostMatchSerializer(read_only=True,many=True)
+    # user_id=UserSerializer(read_only=True)
+
+    class Meta(object):
+        model=Profile
+        fields="__all__"
+        
+
+    def total_hostmatch(self,obj):  #obj is a profile instances(objects)
+
+        queryset = Profile.objects.filter(id=obj.id).annotate(Count('hostmatch_profile'))
+        q=queryset.values(host_match=F('hostmatch_profile__count'))   #use alias to change the field name as you wish.
+        
+        #update hostmacth field in profile model.
+        h=HostMatch.objects.filter(profile_id=obj.id).values('profile_id')
+        p=Profile.objects.filter(id__in=h).update(hostmatch=h.count())
+       
+        return q
+       
+
+    def avg_rating(self,obj):
+        queryset=PlayersRating.objects.filter(player=obj.id).aggregate(Avg('rating'))
         return queryset 
 
-    # def update(self,)   
 
-
-
-    
 class ContactUsSerializer(serializers.ModelSerializer):
     user_id=UserSerializer1()
     class Meta:
@@ -240,4 +272,54 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model=Notification
         fields="__all__"
-          
+
+
+
+
+#friend request
+class UserSerializer2(serializers.ModelSerializer):
+ 
+    class Meta:
+        model=User
+        fields = ("first_name","email",)
+        # exclude=('last_login',)
+        # fields=("email","password")
+        
+
+class ProfileSerializer_Friendrequest(serializers.ModelSerializer):
+    user_id=UserSerializer2(read_only=True)
+    class Meta:
+        model=Profile
+        fields="__all__"
+
+
+
+class GetFriendRequestSerializer(serializers.ModelSerializer):
+  
+    sender=ProfileSerializer_Friendrequest(read_only=True)
+    class Meta:
+        model=FriendRequest
+        fields="__all__"
+
+    def validate(self,validated_data):
+        sender=validated_data['sender']  
+        print(sender)
+        receiver=validated_data['receiver']
+        if sender == receiver:
+            raise serializers.ValidationError("you can not follow itself")
+        return validated_data    
+
+class FriendRequestSerializer(serializers.ModelSerializer):
+ 
+    # sender=ProfileSerializer_Friendrequest(read_only=True)
+    class Meta:
+        model=FriendRequest
+        fields="__all__"
+
+    def validate(self,validated_data):
+        sender=validated_data['sender']  
+        print(sender)
+        receiver=validated_data['receiver']
+        if sender == receiver:
+            raise serializers.ValidationError("you can not follow itself")
+        return validated_data    

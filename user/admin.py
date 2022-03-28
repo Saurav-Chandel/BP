@@ -40,8 +40,8 @@ class TeamScoreInline(admin.TabularInline):
 
 class HostMatchAdmin(admin.ModelAdmin):
    
-    list_display = ('id','profile_id', 'title', 'date','time',
-    'location','select_mode','status')
+    list_display = ('id','profile_id', 'title', 'date','time','location'
+    ,'select_mode','status')
 
     inlines=[HostInvitationInline,Team1PlayerInline,Team2PlayerInline,TeamScoreInline,]
 
@@ -59,7 +59,7 @@ class ProfileAdmin(admin.ModelAdmin):
     list_display = ('id','profile_image', 'country', 'state','zip_code',
     'cpf_number','contact_number','location','matchplayed','matchwon')
 
-    inlines=[HostMatchInline,HostInvitationInline,]
+    inlines=[HostMatchInline,]
 
     
 admin.site.register(User,UserAdmin)
@@ -70,12 +70,14 @@ admin.site.register(HostInvitation,HostInvitationAdmin)
 admin.site.register(Team1Players,Team1PlayerAdmin)
 admin.site.register(Team2Players,Team2PlayerAdmin)
 admin.site.register(TeamScore,TeamScoreAdmin)
+admin.site.register(PlayersRating)
 admin.site.register(ContactUs)
 admin.site.register(AboutUs)
 admin.site.register(PrivacyPolicy)
 admin.site.register(TermsCondition)
 admin.site.register(Notification)
 admin.site.register(UserType)
+admin.site.register(FriendRequest)
 
 
 

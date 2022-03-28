@@ -31,6 +31,13 @@ role = (
     ("buisness", "buisness"),
 )
 
+
+STATUS_CHOICES = (
+        ('Pending', 'Pending'),
+        ('Accepted', 'Accepted'),
+        ('Rejected', 'Rejected')
+)
+
 class AppUserManager(UserManager):
     def get_by_natural_key(self, username):
         return self.get(email__iexact=username)
@@ -115,36 +122,46 @@ class Token(models.Model):
     created_on = models.DateTimeField(default=now, null=True, blank=True)
     expired_on = models.DateTimeField(default=now, null=True, blank=True)
 
-
+from django.core.validators import MaxValueValidator, MinValueValidator
 class Profile(models.Model):
     user_id=models.OneToOneField(User,on_delete=models.CASCADE,related_name="profile",blank=True,null=True)
     profile_image = models.ImageField(upload_to ='media',null=True,blank=True)
     city=models.CharField(max_length=100,blank=True,null=True)
     state=models.CharField(max_length=100,blank=True,null=True)
     country=models.CharField(max_length=100,blank=True,null=True)
+    rating=models.CharField(max_length=100,blank=True,null=True)
     zip_code=models.CharField(max_length=100,blank=True,null=True)
     cpf_number=models.CharField(max_length=100,unique=True,blank=True,null=True)
     contact_number=models.CharField(max_length=15,null=True,blank=True)
     location=models.CharField(max_length=250,null=True,blank=True)
-    hostmatch=models.CharField(max_length=100,null=True,blank=True)
+    hostmatch=models.CharField(max_length=100,null=True,blank=True,default=0)
     matchplayed=models.IntegerField(blank=True,null=True,default=0)
     matchwon=models.IntegerField(blank=True,null=True,default=0)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
-
+    lat=models.CharField(max_length=50,null=True,blank=True)
+    long=models.CharField(max_length=50,null=True,blank=True)
+    
+    # status = models.CharField(max_length=100, choices=STATUS_CHOICES, default="Pending")
+    
     # def save():
         
     def __str__(self):
         return self.user_id.first_name
-
+    
 from geopy.geocoders import Nominatim
-
+from django.contrib.gis.geos import Point
+from django.contrib.gis.db.models import PointField
+from django.contrib.gis.db import models as giomodels
+from location_field.models.plain import PlainLocationField
 
 class HostMatch(models.Model):
     profile_id=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name="hostmatch_profile")
     title=models.CharField(max_length=100,blank=True,null=True)
-    date=models.DateField()
-    time=models.TimeField()
-    location=models.CharField(max_length=200,null=True,blank=True)
+    date=models.DateField(blank=True,null=True)
+    time=models.TimeField(blank=True,null=True)
+    # point = giomodels.PointField(srid=4326,null=True,blank=True)
+    location = PlainLocationField(based_fields=['city'], zoom=7,blank=True,null=True)
+    # location=models.CharField(max_length=200,null=True,blank=True)
     select_mode=models.CharField(max_length=100,blank=True,null=True,choices=hostmatch_selectmode_catchoice)
     status=models.CharField(max_length=200,blank=True,null=True,choices=hostmatch_status_catchoice)
     pincode=models.CharField(max_length=100,null=True,blank=True)
@@ -159,18 +176,31 @@ class HostMatch(models.Model):
         self.long=location.longitude
         super(HostMatch,self).save(*args,**kwargs)
 
- 
     def __str__(self):
         return self.profile_id.user_id.first_name
 
 class HostInvitation(models.Model):
     hostmatch_id=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='hostmatch')
-    user_invited=models.ForeignKey(Profile,on_delete=models.CASCADE,null=True,blank=True,related_name='profile')
+    user_invited=models.ManyToManyField(Profile,related_name='user_invited_profile')
     status=models.CharField(max_length=200,choices=hostinvitation_status_catchoice,null=True,blank=True)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
 
     def __str__(self):
         return self.user_invited.user_id.first_name
+
+
+class FriendRequest(models.Model):
+    sender = models.ForeignKey(Profile,related_name='sender',on_delete=models.CASCADE)  # who sends friend request
+    receiver = models.ForeignKey(Profile,related_name='receiver',on_delete=models.CASCADE)      #Receives the request
+    status = models.CharField(max_length=100, choices=STATUS_CHOICES, default="Pending")
+    date_added=models.DateTimeField(default=django.utils.timezone.now)
+
+    class Meta:
+        unique_together = (('sender', 'receiver',))
+        ordering = ["-date_added"]
+
+    def __str__(self):
+        return f"{self.sender} follows {self.receiver}" 
 
 class Team1Players(models.Model):
     host_match=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='host_player_1')
@@ -191,7 +221,6 @@ class TeamScore(models.Model):
     team2_player_score=models.IntegerField()
     date_added=models.DateTimeField(default=django.utils.timezone.now)
 
-
 #     def save(self):
 #         self.result = TeamScore.objects.annotate(res=Greatest('team1_player_score', 'team2_player_score'))
 #         return super(TeamScore, self).save()
@@ -200,11 +229,10 @@ class TeamScore(models.Model):
         return self.host_match.user_id.user_id.first_name    
 
 class PlayersRating(models.Model):
-    host_match=models.ForeignKey(HostMatch,on_delete=models.CASCADE)
+    # host_match=models.ForeignKey(HostMatch,on_delete=models.CASCADE)
     player=models.ForeignKey(Profile,on_delete=models.CASCADE)
-    rating=models.IntegerField(blank=True,null=True)
+    rating = models.PositiveSmallIntegerField(default=5,validators=[MaxValueValidator(5),MinValueValidator(0)])
     date_added=models.DateTimeField(default=django.utils.timezone.now)
-
 
 class Notification(models.Model):
     User_id=models.ForeignKey(User,on_delete=models.CASCADE,related_name='user10')
@@ -245,3 +273,6 @@ class TermsCondition(models.Model):
 
     def __str__(self):
         return self.terms 
+
+
+        

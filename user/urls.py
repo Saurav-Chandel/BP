@@ -8,12 +8,20 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("auth/api/v1/signup/", views.SignUpView.as_view(), name="signup"),
     path("auth/api/v1/login/", views.LoginView.as_view(), name="login"),
+    path("home/", views.Home.as_view()),
 
-    path("profile/api/v1/create/", views.CreateProfile.as_view(), name="profile"),
-    path("profile/api/v1/list/", views.GetAllProfile.as_view(), name="profile"),
-    path("profile/api/v1/get/<int:pk>/", views.GetProfile.as_view(), name="profile"),
-    path("profile/api/v1/update/<int:pk>/", views.UpdateProfile.as_view(), name="profile"),
-    path("profile/api/v1/delete/<int:pk>/", views.DeleteProfile.as_view()),
+    # path("profile/api/v1/create/", views.CreateProfile.as_view(), name="profile"),
+    path("profile/api/v1/list/", views.GetAllProfile.as_view(), name="profile_list"),
+    path("profile/api/v1/get/<int:pk>/", views.GetProfile.as_view(), name="get_profile"),
+    path("profile/api/v1/update/<int:pk>/", views.UpdateProfile.as_view(), name="update_profile"),
+    path("profile/api/v1/delete/<int:pk>/", views.DeleteProfile.as_view(),name="delete_profile"),
+
+    # Friend_Requests
+    path("Friend_Request/api/v1/list/", views.GetAllFriendRequest.as_view(),),
+    path("Friend_Request/api/v1/create/", views.CreateFriendRequest.as_view()),
+    path("Friend_Request/api/v1/get/<int:pk>/", views.GetFriendRequest.as_view(),),
+    path("Friend_Request/api/v1/update/<int:pk>/", views.UpdateFriendRequest.as_view(),),
+    path("Friend_Request/api/v1/delete/<int:pk>/", views.DeleteFriendRequest.as_view()),
 
     # HostMatch
     path("host_match/api/v1/list/", views.GetAllHostMatch.as_view()),
@@ -61,4 +69,10 @@ urlpatterns = [
         views.SetNewPasswordAPIView.as_view(),
         name="password-reset-complete",
     ),
+    #postman API for friend request
+    path('invitations/',views.Invitations.as_view()),
+    path('myfriends_accepted/',views.MyFriends_Accepted.as_view()),
+    path('friend_request_send/',views.Friend_Request_Send.as_view()),
+    path('accept_request/',views.Accept_Request.as_view()),
+    path('decline_friend_request/',views.Decline_Friend_Request.as_view()),
 ]

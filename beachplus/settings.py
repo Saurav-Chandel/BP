@@ -31,6 +31,11 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
+
+# c:\users\admin\appdata\local\programs\python\python310\lib\site-packages (3.4.1)
+
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -47,7 +52,27 @@ INSTALLED_APPS = [
     'drf_yasg',
     'rest_framework',
     "rest_framework_simplejwt.token_blacklist",
+    'django.contrib.gis',
+    'location_field.apps.DefaultConfig'
+   
 ]
+
+
+import platform
+# import environ
+
+WINDOWS = platform.system() == "Windows"
+
+if WINDOWS:
+    # the below needs to change for linux
+    GDAL_LIBRARY_PATH = r'C:\OSGeo4W\bin\gdal304.dll'
+    GEOS_LIBRARY_PATH = r'C:\OSGeo4W\bin\geos_c.dll'
+    OSGEO4W = r"C:\OSGeo4W"
+    os.environ['OSGEO4W_ROOT'] = OSGEO4W
+    os.environ['GDAL_DATA'] = "C:\Program Files\GDAL\gdal-data"  # OSGEO4W + r"\share\gdal"
+    os.environ['PROJ_LIB'] = OSGEO4W + r"\share\proj"
+    os.environ['PATH'] = OSGEO4W + r"\bin;" + os.environ['PATH']
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -150,6 +175,31 @@ DATABASES = {
     }
 }
 
+# this settings is for the purpose of show the django sql queries format in terminal.
+
+# LOGGING = {
+#     'version': 1,
+#     'filters': {
+#         'require_debug_true': {
+#             '()': 'django.utils.log.RequireDebugTrue',
+#         }
+#     },
+#     'handlers': {
+#         'console': {
+#             'level': 'DEBUG',
+#             'filters': ['require_debug_true'],
+#             'class': 'logging.StreamHandler',
+#         }
+#     },
+#     'loggers': {
+#         'django.db.backends': {
+#             'level': 'DEBUG',
+#             'handlers': ['console'],
+#         }
+#     }
+# }
+
+
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
 
@@ -197,6 +247,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media_root")
 STATIC_URL = "/static/"
 MEDIA_URL = "/media_url/"
 
+# STATICFILES_DIRS = [
+#                     os.path.join(BASE_DIR, 'static_cdn')
+#                ]
+
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
@@ -205,3 +259,44 @@ EMAIL_HOST_PASSWORD ="*******"  #config("EMAIL_HOST_PASSWORD")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+
+
+#google map APi settings for locationfield in django project.
+
+# LOCATION_FIELD_PATH = STATIC_URL + 'location_field'
+# LOCATION_FIELD = {
+#     'map.provider': 'google',
+#     'map.zoom': 13,
+
+#     'search.provider': 'google',
+#     'search.suffix': '',
+
+#     # Google
+#     'provider.google.api': '//maps.google.com/maps/api/js?sensor=false',
+#     'provider.google.api_key': 'AIzaSyDOH6g2JbGjXQG5rMrpsoApUuytzWZvnas',
+#     'provider.google.api_libraries': '',
+#     'provider.google.map.type': 'ROADMAP',
+
+#     # Mapbox
+#     'provider.mapbox.access_token': '',
+#     'provider.mapbox.max_zoom': 18,
+#     'provider.mapbox.id': 'mapbox.streets',
+
+#     # OpenStreetMap
+#     'provider.openstreetmap.max_zoom': 18,
+
+#     # misc
+#     'resources.root_path': LOCATION_FIELD_PATH,
+#     'resources.media': {
+#         'js': (
+#             LOCATION_FIELD_PATH + '/js/form.js',
+#         ),
+#     },
+# }
+
+# LOCATION_FIELD = {
+#     'map.provider': 'openstreetmap',
+#     'search.provider': 'nominatim',
+# }

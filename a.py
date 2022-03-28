@@ -2,6 +2,11 @@
 # print(a)
 # print(type(a))
 
+a=1
+print(a[1])
+
+
+
 import json
 
 # # b=json.dumps(a)

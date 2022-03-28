@@ -4,3 +4,5 @@ from .models import *
 admin.site.register(Buisness)
 # admin.site.register(Short_Images)
 admin.site.register(BuisnessImages)
+
+admin.site.register(BuisnessHours)
