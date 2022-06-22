@@ -31,7 +31,6 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
-
 # c:\users\admin\appdata\local\programs\python\python310\lib\site-packages (3.4.1)
 
 
@@ -252,15 +251,19 @@ MEDIA_URL = "/media_url/"
 #                ]
 
 
+##IAM User Credentials.
+# AWS_ACCESS_KEY_ID = 'AKIAQS6B3M3MBOGCIVOI'
+# AWS_SECRET_ACCESS_KEY = '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'
+# AWS_S3_REGION_NAME = "us-east-1" 
+# AWS_SES_REGION_ENDPOINT = 'email-smtp.us-west-2.amazonaws.com'
+
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_HOST_USER ="chandelsaurav0817@gmail.com" #config("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD ="*******"  #config("EMAIL_HOST_PASSWORD")
+EMAIL_HOST = "email-smtp.us-west-2.amazonaws.com"
+EMAIL_HOST_USER ="AKIAQS6B3M3MOXYWETAR" #config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD ="BB9YDoMd1P+4kKogLRZFU/L8tYVQA1zA+tRR74KqrYAJ"  #config("EMAIL_HOST_PASSWORD")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-
 
 
 #google map APi settings for locationfield in django project.

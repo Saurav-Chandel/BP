@@ -63,9 +63,13 @@
                                 <tr>
                                     {% for buisness in data %}
                                     <td>{{buisness.id}}</td>
-                                    <td> <p><img src="{{ buisness.buisness_image.url }}" width="100px"></p></td>
-                                    <td>{{buisness.profile.user_id.first_name}}</td>
-                                    <td>{{buisness.address}}</td>
+                                    {% if buisness.buisness_image %}
+                                        <td> <p><img src="{{ buisness.buisness_images.url }}" width="100px"></p></td>
+                                    {% else %}
+                                        {% comment %} <td> <p><img src="http://localhost:8000/media_url/buisnessimages/IMG_20200316_115705_707.jpg" width="100px"></p></td> {% endcomment %}
+                                    {% endif %} 
+                                    <td>{{buisness.user_id.first_name}}</td>
+                                    <td>{{buisness.location}}</td>
                                     <td>{{buisness.profile.contact_number}}</td>
                                     <td><a href="/adminapp/buisness_details/{{buisness.id}}/" class="btn_1 ">View Details</a></td>
                                 </tr>

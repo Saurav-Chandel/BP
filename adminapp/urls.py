@@ -6,7 +6,7 @@ from adminapp.views import *
 from adminapp import views
 from django.contrib.auth import views as auth_views
 
-
+    
 urlpatterns = [
     # path('',auth_views.LoginView.as_view(), name='login'),
     # path('',Login.as_view(),name='login'),  

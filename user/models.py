@@ -31,7 +31,6 @@ role = (
     ("buisness", "buisness"),
 )
 
-
 STATUS_CHOICES = (
         ('Pending', 'Pending'),
         ('Accepted', 'Accepted'),
@@ -68,11 +67,12 @@ class AppUserManager(UserManager):
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('username', email)
 
-        try:
+        try:    
             user_type=UserType.objects.get(role="superuser")
         except:
             user_type=UserType.objects.create(role="superuser")
         extra_fields.setdefault('user_type', user_type)
+        
         # try:
         #     buisness=Buisness.objects.get(buisness_name="Buisness")
         # except:
@@ -159,35 +159,28 @@ class HostMatch(models.Model):
     title=models.CharField(max_length=100,blank=True,null=True)
     date=models.DateField(blank=True,null=True)
     time=models.TimeField(blank=True,null=True)
+    # player_counts=models.IntegerField(default=0)
     # point = giomodels.PointField(srid=4326,null=True,blank=True)
-    location = PlainLocationField(based_fields=['city'], zoom=7,blank=True,null=True)
-    # location=models.CharField(max_length=200,null=True,blank=True)
+    # location = PlainLocationField(based_fields=['city'], zoom=7,blank=True,null=True)
+    location=models.CharField(max_length=200,null=True,blank=True)
+    latitude = models.FloatField(max_length = 500,blank=True,null=True)
+    longitude = models.FloatField(max_length = 500,blank=True,null=True)
     select_mode=models.CharField(max_length=100,blank=True,null=True,choices=hostmatch_selectmode_catchoice)
     status=models.CharField(max_length=200,blank=True,null=True,choices=hostmatch_status_catchoice)
-    pincode=models.CharField(max_length=100,null=True,blank=True)
-    lat=models.CharField(max_length=100,null=True,blank=True)
-    long=models.CharField(max_length=100,null=True,blank=True)
+    # pincode=models.CharField(max_length=100,null=True,blank=True)
+    # lat=models.CharField(max_length=100,null=True,blank=True)
+    # long=models.CharField(max_length=100,null=True,blank=True)
     date_added=models.DateTimeField(default=django.utils.timezone.now)
 
-    def save(self,*args,**kwargs):
-        geolocator = Nominatim(user_agent="IN")
-        location=geolocator.geocode(self.pincode)
-        self.lat=location.latitude
-        self.long=location.longitude
-        super(HostMatch,self).save(*args,**kwargs)
+    # def save(self,*args,**kwargs):
+    #     geolocator = Nominatim(user_agent="IN")
+    #     location=geolocator.geocode(self.pincode)
+    #     self.lat=location.latitude
+    #     self.long=location.longitude
+    #     super(HostMatch,self).save(*args,**kwargs)
 
     def __str__(self):
         return self.profile_id.user_id.first_name
-
-class HostInvitation(models.Model):
-    hostmatch_id=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='hostmatch')
-    user_invited=models.ManyToManyField(Profile,related_name='user_invited_profile')
-    status=models.CharField(max_length=200,choices=hostinvitation_status_catchoice,null=True,blank=True)
-    date_added=models.DateTimeField(default=django.utils.timezone.now)
-
-    def __str__(self):
-        return self.user_invited.user_id.first_name
-
 
 class FriendRequest(models.Model):
     sender = models.ForeignKey(Profile,related_name='sender',on_delete=models.CASCADE)  # who sends friend request
@@ -200,7 +193,27 @@ class FriendRequest(models.Model):
         ordering = ["-date_added"]
 
     def __str__(self):
-        return f"{self.sender} follows {self.receiver}" 
+        return f"{self.sender} follows {self.receiver}"
+
+class HostInvitation(models.Model):
+    hostmatch_id=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='hostmatch')
+    user_invited=models.ManyToManyField(Profile,related_name='user_invited_profile')
+    status=models.CharField(max_length=200,choices=hostinvitation_status_catchoice,null=True,blank=True)
+    date_added=models.DateTimeField(default=django.utils.timezone.now)
+
+    def __str__(self):
+        return str(self.hostmatch_id)
+
+
+#first think and then solve.
+# class HostInvitation(models.Model):
+#     hostmatch_id=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='hostmatch')
+#     user_invited=models.ManyToManyField(FriendRequest,related_name='user_invited_friendrequest')
+#     status=models.CharField(max_length=200,choices=hostinvitation_status_catchoice,null=True,blank=True)
+#     date_added=models.DateTimeField(default=django.utils.timezone.now)
+
+#     def __str__(self):
+#         return str(self.hostmatch_id)                
 
 class Team1Players(models.Model):
     host_match=models.ForeignKey(HostMatch,on_delete=models.CASCADE,related_name='host_player_1')

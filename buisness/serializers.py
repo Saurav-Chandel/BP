@@ -52,7 +52,7 @@ class BuisnessSerializer(serializers.ModelSerializer):
 
     def update(self,instance,validated_data):
         print(validated_data)   #data which we get through input fileds by user
-        print(instance)   # instance means the object we want to update  
+        print(instance)   # instance means the object we want to update.  
         images = dict((self.context['request'].FILES).lists()).get('buisness_images', None)
 
         # images = validated_data.pop('images', None)
@@ -65,8 +65,6 @@ class BuisnessSerializer(serializers.ModelSerializer):
             )
 
         return super().update(instance, validated_data) 
-
-
 
 class BuisnessHourSerializer(serializers.ModelSerializer):
     class Meta:

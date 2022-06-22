@@ -60,6 +60,10 @@ class BuisnessImages(models.Model):
     buisness_images=models.ImageField(upload_to='buisnessimages')
 
 
+class BusinessServices(models.Model):
+    buisness=models.ForeignKey(Buisness,on_delete=models.CASCADE)
+    service=models.CharField(max_length=200,blank=True,null=True)
+
 class BuisnessHours(models.Model):
     buisness_id=models.ForeignKey(Buisness,on_delete=models.CASCADE)
     day=models.CharField(max_length=200,null=True,blank=True,choices=DAYS_OF_WEEK)

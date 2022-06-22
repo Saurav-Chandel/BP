@@ -71,8 +71,14 @@ urlpatterns = [
     ),
     #postman API for friend request
     path('invitations/',views.Invitations.as_view()),
-    path('myfriends_accepted/',views.MyFriends_Accepted.as_view()),
+    path('accept_friend_request/',views.MyFriends_Accepted.as_view()),
     path('friend_request_send/',views.Friend_Request_Send.as_view()),
     path('accept_request/',views.Accept_Request.as_view()),
     path('decline_friend_request/',views.Decline_Friend_Request.as_view()),
+
+    #postman API for hostinvitation
+    path('hostmatch_invitation/',views.HostMatch_Invitations.as_view()),
+    path('accept_hostMatch_request/',views.Accept_HostMatch_Request.as_view()),
+    path('decline_hostmatch_request/',views.Decline_Hostmatch_Request.as_view()),
+    path('accepted_hostmatches/',views.Myhostmatch_Accepted.as_view()),
 ]

@@ -11,9 +11,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='hostmatch',
-            name='location',
-            field=location_field.models.plain.PlainLocationField(blank=True, max_length=63, null=True),
-        ),
+        # migrations.AlterField(
+        #     model_name='hostmatch',
+        #     name='location',
+        #     field=location_field.models.plain.PlainLocationField(blank=True, max_length=63, null=True),
+        # ),
     ]

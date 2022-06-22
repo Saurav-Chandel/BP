@@ -9,9 +9,9 @@ class Migration(migrations.Migration):
         ('user', '0079_alter_hostinvitation_user_invited_and_more'),
     ]
 
-    operations = [
-        migrations.RemoveField(
-            model_name='hostmatch',
-            name='location',
-        ),
-    ]
+    # operations = [
+    #     migrations.RemoveField(
+    #         model_name='hostmatch',
+    #         name='location',
+    #     ),
+    # ]

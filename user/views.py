@@ -1,4 +1,3 @@
-
 from django.shortcuts import redirect, render
 from django.shortcuts import render
 from rest_framework.response import Response
@@ -17,6 +16,7 @@ from django.utils.encoding import (
     smart_bytes,
     smart_str,
 )
+
 from rest_framework_simplejwt import authentication
 from rest_framework_simplejwt.tokens import RefreshToken
 import jwt
@@ -25,13 +25,11 @@ from django.contrib.auth import login, authenticate
 from app.SendinSES import *
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.sites.shortcuts import get_current_site
-from django.urls import reverse 
+from django.urls import reverse
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Q,F
-
-
+from django.db.models import Q, F
 
 # Create your views here.
 
@@ -48,15 +46,16 @@ class SignUpView(APIView):
                 "first_name": openapi.Schema(type=openapi.TYPE_STRING),
                 "email": openapi.Schema(type=openapi.TYPE_STRING),
                 "password": openapi.Schema(type=openapi.TYPE_STRING),
-                'user_type':openapi.Schema(type=openapi.TYPE_INTEGER , description="enter user_type_id"),
+                "user_type": openapi.Schema(
+                    type=openapi.TYPE_INTEGER, description="enter user_type_id"
+                ),
             },
         ),
     )
-
     @csrf_exempt
     def post(self, request):
         data = request.data
-        username=str(data.get('email')) + "_" + str(data.get("user_type"))
+        username = str(data.get("email")) + "_" + str(data.get("user_type"))
         data["username"] = username
 
         if User.objects.filter(email=data["email"]).exists():
@@ -86,6 +85,7 @@ class SignUpView(APIView):
                 }
             )
 
+
 class LoginView(APIView):
     """
     login user api
@@ -105,13 +105,12 @@ class LoginView(APIView):
             },
         ),
     )
-
     @csrf_exempt
     def post(self, request):
         data = request.data
         email = data.get("email")
         password = data.get("password")
-        username = data['email']
+        username = data["email"]
 
         try:
             user_object = User.objects.get(email=email)
@@ -123,21 +122,16 @@ class LoginView(APIView):
                     "message": "Serializer error",
                 }
             )
-        try:
-            user_object=User.objects.get(username__iexact=username)
-            if not user_object.is_active:
-                return ResponseBadRequest(
-                    {
-                        "code":status.HTTP_400_BAD_REQUEST,
-                        "message":"you are suspened user"
-                    }
-                )   
-            else:
-                return ResponseBadRequest({
-                "msg":'user not found'
-            })
 
-        except:    
+        user_object = User.objects.get(email__iexact=email)
+        if not user_object.is_active:
+            return ResponseBadRequest(
+                {
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "you are suspened user",
+                }
+            )
+        else:
             if user_object.check_password(password):
                 print("password match")
                 token = RefreshToken.for_user(user_object)
@@ -155,7 +149,7 @@ class LoginView(APIView):
                         user_id=user_object.id, token_type="access_token"
                     ).update(token=str(token.access_token))
                 serializer = UserSerializer(user_object)
-    
+
                 return Response(
                     {
                         "data": serializer.data,
@@ -173,8 +167,8 @@ class LoginView(APIView):
                         "code": status.HTTP_400_BAD_REQUEST,
                         "message": "Serializer error",
                     }
-                )          
-    
+                )
+
 
 class RequestPasswordResetEmailView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -200,12 +194,8 @@ class RequestPasswordResetEmailView(APIView):
         email = data.get("email")
         redirect_url = data.get("redirect_url")
 
-        if User.objects.filter(
-            email=email
-        ).exists():
-            user = User.objects.get(
-                email=email
-            )
+        if User.objects.filter(email=email).exists():
+            user = User.objects.get(email=email)
 
             uidb64 = urlsafe_base64_encode(smart_bytes(user.id))
             token = PasswordResetTokenGenerator().make_token(user)
@@ -214,19 +204,17 @@ class RequestPasswordResetEmailView(APIView):
                 "user:forgot-password-confirm",
                 kwargs={"uidb64": uidb64, "token": token},
             )
-    
+
             absurl = (
                 "http://"
                 + current_site
                 + relativeLink
-                +"?redirect_url="
+                + "?redirect_url="
                 + redirect_url
             )
             print(absurl)
-            email_body = (
-                "Hello, \n Use link below to reset your password  \n" + absurl
-            )
-        
+            email_body = "Hello, \n Use link below to reset your password  \n" + absurl
+
             send_reset_password_mail(request, user.email, email_body)
             return Response(
                 {"success": "We have sent you a link to reset your password"},
@@ -240,6 +228,7 @@ class RequestPasswordResetEmailView(APIView):
                     "message": "User Does Not Exist",
                 }
             )
+
 
 class PasswordTokenCheckAPIView(APIView):
     serializer_class = SetNewPasswordSerializer
@@ -258,7 +247,7 @@ class PasswordTokenCheckAPIView(APIView):
                 return HttpResponsePermanentRedirect(
                     redirect_url + "?token_valid=False"
                 )
-  
+
             if redirect_url and len(redirect_url) > 3:
                 return HttpResponsePermanentRedirect(
                     redirect_url
@@ -285,6 +274,7 @@ class PasswordTokenCheckAPIView(APIView):
                     {"error": "Token is not valid, please request a new one"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+
 
 class SetNewPasswordAPIView(APIView):
     serializer_class = SetNewPasswordSerializer
@@ -317,74 +307,79 @@ class SetNewPasswordAPIView(APIView):
             {"success": True, "message": "Password reset success"},
             status=status.HTTP_200_OK,
         )
+
+
 from django.db.models import Count
+
+
 class GetAllProfile(APIView):
     """
     Get profile
     """
+
     # permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [authentication.JWTAuthentication]
 
-    city = openapi.Parameter('city',
-                            in_=openapi.IN_QUERY,
-                            description='Search by city',
-                            type=openapi.TYPE_STRING,
-                            )
-    state = openapi.Parameter('state',
-                            in_=openapi.IN_QUERY,
-                            description='Search by state',
-                            type=openapi.TYPE_STRING,
-                            )   
-    country = openapi.Parameter('country',
-                            in_=openapi.IN_QUERY,
-                            description='Search by country',
-                            type=openapi.TYPE_STRING,
-                            )    
-    profile_id = openapi.Parameter('profile_id',
-                            in_=openapi.IN_QUERY,
-                            description='enter profile_id',
-                            type=openapi.TYPE_INTEGER,
-                            )                                                                       
-
-
-    @swagger_auto_schema(
-            manual_parameters=[city,state,country,profile_id]
+    city = openapi.Parameter(
+        "city",
+        in_=openapi.IN_QUERY,
+        description="Search by city",
+        type=openapi.TYPE_STRING,
+    )
+    state = openapi.Parameter(
+        "state",
+        in_=openapi.IN_QUERY,
+        description="Search by state",
+        type=openapi.TYPE_STRING,
+    )
+    country = openapi.Parameter(
+        "country",
+        in_=openapi.IN_QUERY,
+        description="Search by country",
+        type=openapi.TYPE_STRING,
+    )
+    profile_id = openapi.Parameter(
+        "profile_id",
+        in_=openapi.IN_QUERY,
+        description="enter profile_id",
+        type=openapi.TYPE_INTEGER,
     )
 
+    @swagger_auto_schema(manual_parameters=[city, state, country, profile_id])
     @csrf_exempt
     def get(self, request):
         try:
-            data=request.GET
-           
-            if data.get('city'):     
-                city=data.get('city')
-            else:
-                city=""
-            print(city)    
-            
-            if data.get('state'):
-                state=data.get('state')
-            else:
-                state=""    
-            print(state)   
+            data = request.GET
 
-            if data.get('country'):
-                country=data.get('country')
+            if data.get("city"):
+                city = data.get("city")
             else:
-                country="" 
+                city = ""
+            print(city)
 
-            if data.get('profile_id'):
-                profile_id=data.get('profile_id')
+            if data.get("state"):
+                state = data.get("state")
             else:
-                profile_id=""  
+                state = ""
+            print(state)
+
+            if data.get("country"):
+                country = data.get("country")
+            else:
+                country = ""
+
+            if data.get("profile_id"):
+                profile_id = data.get("profile_id")
+            else:
+                profile_id = ""
             print(profile_id)
-    
-            profile=Profile.objects.all()
+
+            profile = Profile.objects.all()
 
             # calculate total_host_match by annotate function pass related_name😎😎
             # host_match_count=Profile.objects.filter(id=1).annotate(host_match=Count('hostmatch_profile'))
             # q=host_match_count.values('host_match')
-            # print(q) 
+            # print(q)
 
             # if profile_id:
             #     #this is loc is calculate the rating and give a better respone to front end team.
@@ -392,7 +387,7 @@ class GetAllProfile(APIView):
             #     for elem in rat.values():
             #         print(elem)
             #         p1=Profile.objects.filter(id=profile_id).update(rating=elem)
-                
+
             #     #calculate total_host_match by annotate function.😎😎
 
             #     # host_match_count=Profile.objects.filter(id=profile_id).annotate(host_match=Count('hostmatch_profile'))
@@ -402,28 +397,31 @@ class GetAllProfile(APIView):
             #     #another way to calculate host_match through queries.😎😎
             #     h=HostMatch.objects.filter(profile_id=profile_id).values('profile_id')
             #     p=Profile.objects.filter(id__in=h).update(hostmatch=h.count())
-            
+
             if city:
-                profile=profile.filter(Q(city__icontains=city))  
+                profile = profile.filter(Q(city__icontains=city))
                 print(profile)
             if state:
-                profile=profile.filter(Q(state__icontains=state)) 
+                profile = profile.filter(Q(state__icontains=state))
 
             if country:
-                profile=profile.filter(Q(country__icontains=country))     
+                profile = profile.filter(Q(country__icontains=country))
 
             if profile:
-                serializer=GetProfileSerializer(profile,many=True) 
-               
-                return Response({
-                    'data':serializer.data,
-                    'status':status.HTTP_200_OK,
-                    'msg':'All profiles by given search'
-                })                 
+                serializer = GetProfileSerializer(profile, many=True)
+
+                return Response(
+                    {
+                        "data": serializer.data,
+                        "status": status.HTTP_200_OK,
+                        "msg": "All profiles by given search",
+                    }
+                )
             else:
-                return Response({'msg':'search not found'})
+                return Response({"msg": "search not found"})
         except:
-            return Response({'msg':'search query does not found'})        
+            return Response({"msg": "search query does not found"})
+
 
 # class CreateProfile(APIView):
 #     """
@@ -444,7 +442,7 @@ class GetAllProfile(APIView):
 #         serializer = ProfileSerializer(data=request.data)
 #         if serializer.is_valid():
 #             user_obj=serializer.save()
-            
+
 #             user_obj=User.objects.filter(id=user_obj.id)[0]
 #             user_serializer=UserSerializer(user_obj)
 #             print(user_serializer)
@@ -457,7 +455,7 @@ class GetAllProfile(APIView):
 #                     "message": "Profile created succesfully",
 #                 }
 #             )
-#         else:    
+#         else:
 #             return ResponseBadRequest(
 #                 {
 #                     "data": serializer.errors,
@@ -465,6 +463,7 @@ class GetAllProfile(APIView):
 #                     "message": "Profile is not valid",
 #                 }
 #             )
+
 
 class UpdateProfile(APIView):
     """
@@ -486,35 +485,36 @@ class UpdateProfile(APIView):
         request_body=ProfileSerializer,
     )
     @csrf_exempt
-    def put(self,request,pk):
+    def put(self, request, pk):
         try:
-            profile=self.get_object(pk)
-            serializer=ProfileSerializer(profile,data=request.data)
+            profile = self.get_object(pk)
+            serializer = ProfileSerializer(profile, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return ResponseOk(
                     {
-                        "data":serializer.data,
-                        "code":status.HTTP_200_OK,
-                        "message":"Profile updated successfully"
+                        "data": serializer.data,
+                        "code": status.HTTP_200_OK,
+                        "message": "Profile updated successfully",
                     }
                 )
             else:
                 return ResponseBadRequest(
                     {
-                        "data":serializer.errors,
-                        "code":status.HTTP_400_BAD_REQUEST,
-                        "message":"Profile Not Valid"
+                        "data": serializer.errors,
+                        "code": status.HTTP_400_BAD_REQUEST,
+                        "message": "Profile Not Valid",
                     }
-                )  
+                )
         except:
-            return  ResponseBadRequest(
+            return ResponseBadRequest(
                 {
-                    "data":None,
-                    "code":status.HTTP_400_BAD_REQUEST,
-                    "message":"Profile Does Not exists."
+                    "data": None,
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Profile Does Not exists.",
                 }
-            )          
+            )
+
 
 class GetProfile(APIView):
     """
@@ -529,51 +529,53 @@ class GetProfile(APIView):
             return Profile.objects.get(pk=pk)
         except Profile.DoesNotExist:
             raise ResponseNotFound()
-
-   
-    def get(self,request,pk):
+    
+    def get(self, request, pk):
         try:
-            profile=self.get_object(pk)
-            rat=PlayersRating.objects.filter(player=pk).aggregate(rating=Avg('rating'))
+            profile = self.get_object(pk)
+            rat = PlayersRating.objects.filter(player=pk).aggregate(
+                rating=Avg("rating")
+            )
             for elem in rat.values():
                 print(elem)
-            p1=Profile.objects.filter(id=pk).update(rating=elem)
-            
-            #calculate total_host_match by annotate function.😎😎
+            p1 = Profile.objects.filter(id=pk).update(rating=elem)
+
+            # calculate total_host_match by annotate function.😎😎
             # host_match_count=Profile.objects.filter(id=profile_id).annotate(host_match=Count('hostmatch_profile'))
             # print(host_match_count.values('host_match'))
             # p=Profile.objects.filter(id=profile_id).update(hostmatch=host_match_count.values_list('host_match'))
-            
-            #another way to calculate host_match through queries.😎😎
-            h=HostMatch.objects.filter(profile_id=pk).values('profile_id')
-            p=Profile.objects.filter(id__in=h).update(hostmatch=h.count())
+
+            # another way to calculate host_match through queries.😎😎
+            h = HostMatch.objects.filter(profile_id=pk).values("profile_id")
+            p = Profile.objects.filter(id__in=h).update(hostmatch=h.count())
             print(h.count())
 
-            serializer=GetProfileSerializer(profile)
+            serializer = GetProfileSerializer(profile)
             return ResponseOk(
                 {
-                    "data":serializer.data,
-                    "code":status.HTTP_200_OK,
-                    "message":"Get Profile successfully"
+                    "data": serializer.data,
+                    "code": status.HTTP_200_OK,
+                    "message": "Get Profile successfully",
                 }
             )
-           
+
         except:
-            return  ResponseBadRequest(
+            return ResponseBadRequest(
                 {
-                    "data":None,
-                    "code":status.HTTP_400_BAD_REQUEST,
-                    "message":"Profile Does Not exists."
+                    "data": None,
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "Profile Does Not exists.",
                 }
-            )    
+            )
+
 
 class DeleteProfile(APIView):
     """
     Delete Profile
     """
+
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [authentication.JWTAuthentication]
-
 
     @csrf_exempt
     def get_object(self, pk):
@@ -601,89 +603,105 @@ class DeleteProfile(APIView):
                     "message": "Profile Does Not Exist",
                 }
             )
-            
+
+
 from django.db.models.functions import Greatest
 from django.db.models import Avg
 from datetime import datetime
+
+
 class GetAllHostMatch(APIView):
     """
     Get All HostMatch
     """
+
     # permission_classes=(IsAuthenticated,)
 
-    search = openapi.Parameter('search',
-                            in_=openapi.IN_QUERY,
-                            description='Search by location',
-                            type=openapi.TYPE_STRING,
-                            )
-    date = openapi.Parameter('date',
-                            in_=openapi.IN_QUERY,
-                            description='Search by date',
-                            type=openapi.TYPE_STRING,
-                            )      
-
-    user_id = openapi.Parameter('user_id',
-                            in_=openapi.IN_QUERY,
-                            description='enter user_id',
-                            type=openapi.TYPE_INTEGER,
-                            )  
-
-    hosted_completed = openapi.Parameter('complete',
-                            in_=openapi.IN_QUERY,
-                            description='pass true if you want to get a list of match is completed',
-                            type=openapi.TYPE_BOOLEAN,
-                            )  
-    hosted_ongoing = openapi.Parameter('ongoing',
-                            in_=openapi.IN_QUERY,
-                            description='pass true if you want to get a list of match is ongoing',
-                            type=openapi.TYPE_BOOLEAN,
-                            )   
-
-    host_match = openapi.Parameter('host_match',
-                            in_=openapi.IN_QUERY,
-                            description='find the TeamScore host_match_id',
-                            type=openapi.TYPE_STRING,
-                            )                                                                                                                                     
-
-    @swagger_auto_schema(
-            manual_parameters=[search,date,hosted_completed,hosted_ongoing,user_id,host_match]
+    search = openapi.Parameter(
+        "search",
+        in_=openapi.IN_QUERY,
+        description="Search by location",
+        type=openapi.TYPE_STRING,
+    )
+    date = openapi.Parameter(
+        "date",
+        in_=openapi.IN_QUERY,
+        description="Search by date",
+        type=openapi.TYPE_STRING,
     )
 
+    user_id = openapi.Parameter(
+        "user_id",
+        in_=openapi.IN_QUERY,
+        description="enter user_id",
+        type=openapi.TYPE_INTEGER,
+    )
+
+    hosted_completed = openapi.Parameter(
+        "complete",
+        in_=openapi.IN_QUERY,
+        description="pass true if you want to get a list of match is completed",
+        type=openapi.TYPE_BOOLEAN,
+    )
+    hosted_ongoing = openapi.Parameter(
+        "ongoing",
+        in_=openapi.IN_QUERY,
+        description="pass true if you want to get a list of match is ongoing",
+        type=openapi.TYPE_BOOLEAN,
+    )
+
+    host_match = openapi.Parameter(
+        "host_match",
+        in_=openapi.IN_QUERY,
+        description="find the TeamScore host_match_id",
+        type=openapi.TYPE_STRING,
+    )
+
+    @swagger_auto_schema(
+        manual_parameters=[
+            search,
+            date,
+            hosted_completed,
+            hosted_ongoing,
+            user_id,
+            host_match,
+        ]
+    )
     @csrf_exempt
     def get(self, request):
         try:
-            data=request.GET
+            data = request.GET
             if data.get("search"):
-                query=data.get('search')
+                query = data.get("search")
             else:
-                query=""   
+                query = ""
 
             if data.get("date"):
-                date=data.get('date')
+                date = data.get("date")
             else:
-                date=""
+                date = ""
 
             if data.get("user_id"):
-                user=data.get('user_id')
+                user = data.get("user_id")
             else:
-                user=""    
-             
+                user = ""
+
             if data.get("complete"):
-                completed=data.get('complete')
+                completed = data.get("complete")
             else:
-                completed=""   
+                completed = ""
 
             if data.get("ongoing"):
-                ongoing=data.get('ongoing')
+                ongoing = data.get("ongoing")
             else:
-                ongoing="" 
+                ongoing = ""
 
             if data.get("host_match"):
-                host=data.get('host_match')
+                host = data.get("host_match")
             else:
-                host=""       
+                host = ""
 
-            host_match=HostMatch.objects.all()
+            host_match = HostMatch.objects.all()
             print(host_match)
 
             # if user:
@@ -691,58 +709,63 @@ class GetAllHostMatch(APIView):
             #     print(a)
             #     b=Profile.objects.filter(id__in=a).update(hostmatch=a.count())
             #     print(b)
-            
-               
+
             if host:
-                host_match=host_match.filter(user_id=host)
+                host_match = host_match.filter(user_id=host)
                 print(host_match)
                 print("_______")
-                team1_score=list(HostMatch.objects.filter(user_id=host).annotate(Avg('host_score__team1_player_score')).values_list('host_score__team1_player_score__avg'))
+                team1_score = list(
+                    HostMatch.objects.filter(user_id=host)
+                    .annotate(Avg("host_score__team1_player_score"))
+                    .values_list("host_score__team1_player_score__avg")
+                )
                 print(team1_score)
-                    
+
                 print("_______")
 
-                team2_score=list(HostMatch.objects.filter(user_id=host).annotate(Avg('host_score__team2_player_score')).values_list('host_score__team2_player_score__avg'))
+                team2_score = list(
+                    HostMatch.objects.filter(user_id=host)
+                    .annotate(Avg("host_score__team2_player_score"))
+                    .values_list("host_score__team2_player_score__avg")
+                )
                 print(team2_score)
 
                 print("_____")
 
-                if team1_score>team2_score:
-                    host_invited=HostInvitation.objects.filter(hostmatch_id=host)
+                if team1_score > team2_score:
+                    host_invited = HostInvitation.objects.filter(hostmatch_id=host)
                     print(host_invited[0])
 
                     print("player 1 wins")
 
-                if team1_score<team2_score:
-                    host_invited=HostInvitation.objects.filter(hostmatch_id=host)
+                if team1_score < team2_score:
+                    host_invited = HostInvitation.objects.filter(hostmatch_id=host)
                     print(host_invited[1])
-                    
-                    print("player 2 wins")    
 
+                    print("player 2 wins")
 
                 # max_score=HostMatch.objects.filter(user_id=host).annotate(res=Greatest(Avg('host_score__team1_player_score'),(Avg('host_score__team2_player_score')))).values()
                 # print(max_score)
                 # print("____")
-            
-        
+
             if query:
-                host_match=host_match.filter(Q(location__icontains=query))
+                host_match = host_match.filter(Q(location__icontains=query))
 
             if date:
-                host_match=host_match.filter(Q(date__icontains=date)) 
+                host_match = host_match.filter(Q(date__icontains=date))
 
             if completed:
                 date = datetime.today()
-                # time = datetime.now().time() 
-                host_match=host_match.filter(user_id=user,date__lte=date)
+                # time = datetime.now().time()
+                host_match = host_match.filter(user_id=user, date__lte=date)
 
             if ongoing:
                 date = datetime.today()
-                # time = datetime.now().time() 
-                host_match=host_match.filter(user_id=user,date__gte=date)
-            
+                # time = datetime.now().time()
+                host_match = host_match.filter(user_id=user, date__gte=date)
+
             if host_match:
-                serializer=GetHostMatchSerializer(host_match,many=True)
+                serializer = GetHostMatchSerializer(host_match, many=True)
                 return ResponseOk(
                     {
                         "data": serializer.data,
@@ -751,19 +774,18 @@ class GetAllHostMatch(APIView):
                     }
                 )
             else:
-                return Response({'msg':'search not found'})    
+                return Response({"msg": "search not found"})
         except:
-            return Response({'msg':'search query does not found'})
+            return Response({"msg": "search query does not found"})
 
 
 class CreateHostMatch(APIView):
     """
     Create HostMatch
     """
-    
+
     # permission_classes=(IsAuthenticated,)
     parser_classes = (FormParser, MultiPartParser)
-
 
     @swagger_auto_schema(
         operation_description="create HostMatch",
@@ -782,9 +804,9 @@ class CreateHostMatch(APIView):
                     "message": "HostMatch created succesfully",
                 }
             )
-            
-        else:    
-            
+
+        else:
+
             return ResponseBadRequest(
                 {
                     "data": serializer.errors,
@@ -794,16 +816,15 @@ class CreateHostMatch(APIView):
             )
 
 
-
 class GetHostMatch(APIView):
     """
     Get HostMatch by pk
     """
-    permission_classes=(IsAuthenticated,)
-    
 
+    permission_classes = (IsAuthenticated,)
 
     csrf_exempt
+
     def get_object(self, pk):
         try:
             return HostMatch.objects.get(pk=pk)
@@ -835,10 +856,10 @@ class UpdateHostMatch(APIView):
     """
     Update HostMatch
     """
-    permission_classes=(IsAuthenticated,)
+
+    permission_classes = (IsAuthenticated,)
 
     parser_classes = (FormParser, MultiPartParser)
-
 
     def get_object(self, pk):
         try:
@@ -881,11 +902,13 @@ class UpdateHostMatch(APIView):
                 }
             )
 
+
 class DeleteHostMatch(APIView):
     """
     Delete HostMatch
     """
-    permission_classes=(IsAuthenticated,)
+
+    permission_classes = (IsAuthenticated,)
 
     @csrf_exempt
     def get_object(self, pk):
@@ -914,128 +937,159 @@ class DeleteHostMatch(APIView):
                 }
             )
 
+
 class GetAllHostInvitation(APIView):
     """
     Get All HostInvitation
     """
+
     # permission_classes=(IsAuthenticated,)
-    host_match = openapi.Parameter('host_match',
-                            in_=openapi.IN_QUERY,
-                            description='find the invited_users who status is Attends by host_match_id',
-                            type=openapi.TYPE_STRING,
-                            )  
-
-    user_invited = openapi.Parameter('user_invited',
-                            in_=openapi.IN_QUERY,
-                            description='find the invitations send by host match by the user_invited_id  ',
-                            type=openapi.TYPE_STRING,
-                            )   
-
-    attend_completed = openapi.Parameter('complete',
-                            in_=openapi.IN_QUERY,
-                            description='pass true if you want to get a list of match is completed and attended also',
-                            type=openapi.TYPE_BOOLEAN,
-                            )
-
-    atttend_ongoing = openapi.Parameter('ongoing',
-                            in_=openapi.IN_QUERY,
-                            description='pass true if you want to get a list of match is ongoing and attended also',
-                            type=openapi.TYPE_BOOLEAN,
-                            )                          
-                          
-    @swagger_auto_schema(
-            manual_parameters=[host_match,user_invited,attend_completed,atttend_ongoing]
+    host_match = openapi.Parameter(
+        "host_match",
+        in_=openapi.IN_QUERY,
+        description="find the invited_users who status is Attends by host_match_id",
+        type=openapi.TYPE_STRING,
     )
 
+    user_invited = openapi.Parameter(
+        "user_invited",
+        in_=openapi.IN_QUERY,
+        description="find the invitations send by host match by the user_invited_id  ",
+        type=openapi.TYPE_STRING,
+    )
+
+    attend_completed = openapi.Parameter(
+        "complete",
+        in_=openapi.IN_QUERY,
+        description="pass true if you want to get a list of match is completed and attended also",
+        type=openapi.TYPE_BOOLEAN,
+    )
+
+    atttend_ongoing = openapi.Parameter(
+        "ongoing",
+        in_=openapi.IN_QUERY,
+        description="pass true if you want to get a list of match is ongoing and attended also",
+        type=openapi.TYPE_BOOLEAN,
+    )
+
+    @swagger_auto_schema(
+        manual_parameters=[host_match, user_invited, attend_completed, atttend_ongoing]
+    )
     @csrf_exempt
     def get(self, request):
         try:
-            data=request.GET
-            if data.get('user_invited'):     
-                user_invited=data.get('user_invited')
+            data = request.GET
+            if data.get("user_invited"):
+                user_invited = data.get("user_invited")
             else:
-                user_invited=""
+                user_invited = ""
 
-            if data.get('host_match'):     
-                host_match=data.get('host_match')
+            if data.get("host_match"):
+                host_match = data.get("host_match")
             else:
-                host_match="" 
-            print(host_match)       
+                host_match = ""
+            print(host_match)
 
             if data.get("complete"):
-                completed=data.get('complete')
+                completed = data.get("complete")
             else:
-                completed=""   
+                completed = ""
 
             if data.get("ongoing"):
-                ongoing=data.get('ongoing')
+                ongoing = data.get("ongoing")
             else:
-                ongoing=""        
+                ongoing = ""
 
-            host_invitation=HostInvitation.objects.all()
-        
+            host_invitation = HostInvitation.objects.all()
+
             if host_match:
-                host_invitation=host_invitation.filter(hostmatch_id=host_match,status='Attend')
+                host_invitation = host_invitation.filter(
+                    hostmatch_id=host_match, status="Attend"
+                )
                 print(host_invitation)
 
-                team1_score=list(HostMatch.objects.filter(profile_id=host_match).annotate(Avg('host_score__team1_player_score')).values_list('host_score__team1_player_score__avg'))
+                team1_score = list(
+                    HostMatch.objects.filter(profile_id=host_match)
+                    .annotate(Avg("host_score__team1_player_score"))
+                    .values_list("host_score__team1_player_score__avg")
+                )
                 print(team1_score)
                 print("_______")
-             
-                team2_score=list(HostMatch.objects.filter(profile_id=host_match).annotate(Avg('host_score__team2_player_score')).values_list('host_score__team2_player_score__avg'))
+
+                team2_score = list(
+                    HostMatch.objects.filter(profile_id=host_match)
+                    .annotate(Avg("host_score__team2_player_score"))
+                    .values_list("host_score__team2_player_score__avg")
+                )
                 print(team2_score)
-                
+
                 print("_____")
 
-                if team1_score>team2_score:
+                if team1_score > team2_score:
                     print(host_invitation[0])
                     # print(host_invitation.count())
                     print("player 1 wins")
                     # print(host_match[0])
 
-                if team1_score<team2_score:
+                if team1_score < team2_score:
                     print(host_invitation[1])
                     # print(host_invitation.count())
                     print("player 2 wins")
                     print(host_match[1])
-              
+
             if user_invited:
-                host_invitation=host_invitation.filter(user_invited=user_invited)
+                host_invitation = host_invitation.filter(user_invited=user_invited)
                 if completed:
                     date = datetime.today()
-                    # time = datetime.now().time() 
-                    host_invitation=HostInvitation.objects.filter(user_invited=user_invited,status='Attend').values('hostmatch_id')
+                    # time = datetime.now().time()
+                    host_invitation = HostInvitation.objects.filter(
+                        user_invited=user_invited, status="Attend"
+                    ).values("hostmatch_id")
                     print(host_invitation)
-                    host_match=HostMatch.objects.filter(id__in=host_invitation,date__lte=date).values()
+                    host_match = HostMatch.objects.filter(
+                        id__in=host_invitation, date__lte=date
+                    ).values()
                     print(host_match)
 
-                    #total match played by player.
-                    match_played=HostInvitation.objects.filter(user_invited=user_invited,status='Attend').values()
+                    # total match played by player.
+                    match_played = HostInvitation.objects.filter(
+                        user_invited=user_invited, status="Attend"
+                    ).values()
 
-                    #update the value of matchplayed in profile table.
-                    Profile.objects.filter(user_id=user_invited).update(matchplayed=match_played.count())
+                    # update the value of matchplayed in profile table.
+                    Profile.objects.filter(user_id=user_invited).update(
+                        matchplayed=match_played.count()
+                    )
 
-                    return Response({
-                        'match_played':match_played.count(),
-                        'data':host_match,
-                        'msg':'My Attending or Completed Matches List',
-                        'status':200
-                            })
+                    return Response(
+                        {
+                            "match_played": match_played.count(),
+                            "data": host_match,
+                            "msg": "My Attending or Completed Matches List",
+                            "status": 200,
+                        }
+                    )
                 if ongoing:
                     date = datetime.today()
-                    # time = datetime.now().time() 
-                    host_invitation=HostInvitation.objects.filter(user_invited=user_invited,status='Attend').values('hostmatch_id')
-                    host_match=HostMatch.objects.filter(id__in=host_invitation,date__gte=date).values()
+                    # time = datetime.now().time()
+                    host_invitation = HostInvitation.objects.filter(
+                        user_invited=user_invited, status="Attend"
+                    ).values("hostmatch_id")
+                    host_match = HostMatch.objects.filter(
+                        id__in=host_invitation, date__gte=date
+                    ).values()
                     print(host_match)
-                    return Response({
-                        'data':host_match,
-                        'msg':'My Attending or Ongoing Matches List',
-                        'status':200
-                            })
-            
+                    return Response(
+                        {
+                            "data": host_match,
+                            "msg": "My Attending or Ongoing Matches List",
+                            "status": 200,
+                        }
+                    )
+
             if host_invitation:
-        
-                serializer=HostInvitationSerializer(host_invitation,many=True)
+
+                serializer = HostInvitationSerializer(host_invitation, many=True)
                 return ResponseOk(
                     {
                         "data": serializer.data,
@@ -1044,16 +1098,16 @@ class GetAllHostInvitation(APIView):
                     }
                 )
             else:
-                return Response({'msg':'hostinvitation does not found'})
+                return Response({"msg": "hostinvitation does not found"})
         except:
-            return Response({'msg':'hostinvitation1 does not found'})    
+            return Response({"msg": "hostinvitation1 does not found"})
 
 
 class CreateHostInvitation(APIView):
     """
     Create HostInvitation
     """
-    
+
     # permission_classes=(IsAuthenticated,)
     parser_classes = (FormParser, MultiPartParser)
 
@@ -1073,9 +1127,9 @@ class CreateHostInvitation(APIView):
                     "message": "HostInvitation created succesfully",
                 }
             )
-            
-        else:    
-            
+
+        else:
+
             return ResponseBadRequest(
                 {
                     "data": serializer.errors,
@@ -1084,13 +1138,16 @@ class CreateHostInvitation(APIView):
                 }
             )
 
+
 class GetHostInvitation(APIView):
     """
     Get HostInvitation by pk
     """
-    permission_classes=(IsAuthenticated,)
-    
+
+    permission_classes = (IsAuthenticated,)
+
     csrf_exempt
+
     def get_object(self, pk):
         try:
             return HostInvitation.objects.get(pk=pk)
@@ -1117,14 +1174,27 @@ class GetHostInvitation(APIView):
                 }
             )
 
+
 class UpdateHostInvitation(APIView):
     """
     Update HostInvitation
     """
-    permission_classes=(IsAuthenticated,)
-    parser_classes = (FormParser, MultiPartParser)
 
+    hostmatch_id = openapi.Parameter(
+        "hostmatch_id",
+        in_=openapi.IN_QUERY,
+        description="maximum score of match",
+        type=openapi.TYPE_STRING,
+    )
 
+    user_invited = openapi.Parameter(
+        "user_invited ",
+        in_=openapi.IN_QUERY,
+        description="maximum score of match",
+        type=openapi.TYPE_STRING,
+    )
+
+    @swagger_auto_schema(manual_parameters=[hostmatch_id, user_invited])
     def get_object(self, pk):
         try:
             return HostInvitation.objects.get(pk=pk)
@@ -1171,7 +1241,8 @@ class DeleteHostInvitation(APIView):
     """
     Delete HostInvitation
     """
-    permission_classes=(IsAuthenticated,)
+
+    permission_classes = (IsAuthenticated,)
 
     @csrf_exempt
     def get_object(self, pk):
@@ -1201,57 +1272,56 @@ class DeleteHostInvitation(APIView):
             )
 
 
-#Team Score API's
+# Team Score API's
 class GetAllTeamScore(APIView):
     """
     Get All TeamScore
     """
+
     # permission_classes=(IsAuthenticated,)
 
-    host_match = openapi.Parameter('host_match',
-                            in_=openapi.IN_QUERY,
-                            description='enter host_match id',
-                            type=openapi.TYPE_STRING,
-                            )
-    total_score = openapi.Parameter('total_score',
-                            in_=openapi.IN_QUERY,
-                            description='maximum score of match',
-                            type=openapi.TYPE_STRING,
-                            )   
-    @swagger_auto_schema(
-            manual_parameters=[host_match,total_score]
-    )                        
+    host_match = openapi.Parameter(
+        "host_match",
+        in_=openapi.IN_QUERY,
+        description="enter host_match id",
+        type=openapi.TYPE_STRING,
+    )
+    total_score = openapi.Parameter(
+        "total_score",
+        in_=openapi.IN_QUERY,
+        description="maximum score of match",
+        type=openapi.TYPE_STRING,
+    )
 
+    @swagger_auto_schema(manual_parameters=[host_match, total_score])
     @csrf_exempt
     def get(self, request):
         try:
-            dictV=dict()
-            data=request.GET
-            if data.get('host_match'):     
-                host_match=data.get('host_match')
+            dictV = dict()
+            data = request.GET
+            if data.get("host_match"):
+                host_match = data.get("host_match")
             else:
-                host_match=""
+                host_match = ""
 
-            if data.get('total_score'):
-                total_score=data.get('total_score')
+            if data.get("total_score"):
+                total_score = data.get("total_score")
             else:
-                total_score=""    
+                total_score = ""
 
-            team_score=TeamScore.objects.all()
-          
+            team_score = TeamScore.objects.all()
+
             if not host_match:
                 # result=TeamScore.objects.annotate(res=Greatest('team1_player_score','team2_player_score')).values()
                 # print(result)
-                dictV['msg']="enter a hostmatch_id to get a final result"
-
+                dictV["msg"] = "enter a hostmatch_id to get a final result"
 
             if host_match:
-                team_score=team_score.filter(host_match=host_match)
-                p1_result=team_score.annotate(Avg('team1_player_score'))
+                team_score = team_score.filter(host_match=host_match)
+                p1_result = team_score.annotate(Avg("team1_player_score"))
                 print(vars(p1_result[0]))
-                p2_result=team_score.annotate(Avg('team2_player_score'))
+                p2_result = team_score.annotate(Avg("team2_player_score"))
                 print(vars(p2_result[0]))
-
 
                 # team_score=team_score.filter(host_match=host_match)
                 # print(team_score)
@@ -1262,22 +1332,24 @@ class GetAllTeamScore(APIView):
 
                 # if len(p1_result)>len(p2_result):
                 #     dictV['final_result']="player1 wins"
-                    
+
                 # if len(p1_result)<len(p2_result):
                 #     dictV['final_result']="player2 wins"
 
             if team_score:
-                serializer=TeamScoreSerializer(team_score,many=True)  
-        
-                return Response({
-                    'data':serializer.data,
-                    "winner":dictV,
-                    'status':status.HTTP_200_OK,
-                    'msg':'list of Team_Score'
-                })                 
+                serializer = TeamScoreSerializer(team_score, many=True)
+
+                return Response(
+                    {
+                        "data": serializer.data,
+                        "winner": dictV,
+                        "status": status.HTTP_200_OK,
+                        "msg": "list of Team_Score",
+                    }
+                )
             else:
-                return Response({'msg':'hostmatch does not found'})
-                
+                return Response({"msg": "hostmatch does not found"})
+
         except:
             return Response({"Team_Score does not find"})
 
@@ -1286,8 +1358,8 @@ class CreateTeamScore(APIView):
     """
     Create TeamScore
     """
-    
-    permission_classes=(IsAuthenticated,)
+
+    permission_classes = (IsAuthenticated,)
     parser_classes = (FormParser, MultiPartParser)
 
     @swagger_auto_schema(
@@ -1306,9 +1378,9 @@ class CreateTeamScore(APIView):
                     "message": "Team_Score recorded Successfully",
                 }
             )
-            
-        else:    
-            
+
+        else:
+
             return ResponseBadRequest(
                 {
                     "data": serializer.errors,
@@ -1316,28 +1388,33 @@ class CreateTeamScore(APIView):
                     "message": "Team_Score is not valid",
                 }
             )
+
+
 from django.db.models import Count
 from django.db.models.functions import Greatest
+
+
 class GetTeamScore(APIView):
     """
     Get TeamScore by pk
     """
-    # permission_classes=(IsAuthenticated,)  
-    
-    host_match = openapi.Parameter('host_match',
-                            in_=openapi.IN_QUERY,
-                            description='enter host_match id',
-                            type=openapi.TYPE_STRING,
-                            )
-    total_score = openapi.Parameter('total_score',
-                            in_=openapi.IN_QUERY,
-                            description='maximum score of match',
-                            type=openapi.TYPE_STRING,
-                            )   
-    @swagger_auto_schema(
-            manual_parameters=[host_match,total_score]
-    )                   
 
+    # permission_classes=(IsAuthenticated,)
+
+    host_match = openapi.Parameter(
+        "host_match",
+        in_=openapi.IN_QUERY,
+        description="enter host_match id",
+        type=openapi.TYPE_STRING,
+    )
+    total_score = openapi.Parameter(
+        "total_score",
+        in_=openapi.IN_QUERY,
+        description="maximum score of match",
+        type=openapi.TYPE_STRING,
+    )
+
+    @swagger_auto_schema(manual_parameters=[host_match, total_score])
     @csrf_exempt
     def get_object(self, pk):
         try:
@@ -1348,38 +1425,38 @@ class GetTeamScore(APIView):
     def get(self, request, pk):
         try:
             team_score = self.get_object(pk)
-            player1=team_score.team1_player_score
-            player2=team_score.team2_player_score
-            dictV=dict()
-            if player1>player2:
-                dictV['result_']="player1 wins"
-                dictV['result']="player2 lose"
-            else:   
-                dictV['result_']="player2 wins"
-                dictV['result']="player1 loss"
-    
+            player1 = team_score.team1_player_score
+            player2 = team_score.team2_player_score
+            dictV = dict()
+            if player1 > player2:
+                dictV["result_"] = "player1 wins"
+                dictV["result"] = "player2 lose"
+            else:
+                dictV["result_"] = "player2 wins"
+                dictV["result"] = "player1 loss"
+
             # print(vars(team_score))
 
-            # round=TeamScore.objects.annotate(c=Count('round')) 
+            # round=TeamScore.objects.annotate(c=Count('round'))
             # len_round=len(round)
             # print(len_round)
             # print(round)
-            
+
             # for i in range(0,len_round):
-            #     round=TeamScore.objects.annotate(c=Count('round')) 
+            #     round=TeamScore.objects.annotate(c=Count('round'))
             #     score=round.annotate(res=Greatest('team1_player_score','team2_player_score'))
             #     print(vars(score[0]))
 
-                # print("__________")
-                # print(vars(round[i]))
-                  
+            # print("__________")
+            # print(vars(round[i]))
+
             # print(vars(round[0]))
 
             serializer = TeamScoreSerializer(team_score)
             return ResponseOk(
                 {
                     "data": serializer.data,
-                    "result":dictV,
+                    "result": dictV,
                     "code": status.HTTP_200_OK,
                     "message": "get TeamScore successfully",
                 }
@@ -1398,9 +1475,9 @@ class UpdateTeamScore(APIView):
     """
     Update TeamScore
     """
-    permission_classes=(IsAuthenticated,)
-    parser_classes = (FormParser, MultiPartParser)
 
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (FormParser, MultiPartParser)
 
     def get_object(self, pk):
         try:
@@ -1448,9 +1525,9 @@ class DeleteTeamScore(APIView):
     """
     Delete TeamScore
     """
-    permission_classes=(IsAuthenticated,)
-    parser_classes = (FormParser, MultiPartParser)
 
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (FormParser, MultiPartParser)
 
     @csrf_exempt
     def get_object(self, pk):
@@ -1479,6 +1556,7 @@ class DeleteTeamScore(APIView):
                 }
             )
 
+
 # class CreateProfileAPI(generics.GenericAPIView):
 #     permission_classes = [permissions.IsAuthenticated]
 #     serializer_class=ProfileSerializer
@@ -1497,77 +1575,93 @@ from rest_framework.permissions import IsAuthenticated
 class ResetPasswordAppAPI(generics.GenericAPIView):
     # permission_class=(IsAuthenticated,)
     def post(self, request, *args, **kwargs):
-        user_id=request.data['user_id']
-        u=User.objects.get(id=user_id)
-        pwd=str(request.data['password'])
+        user_id = request.data["user_id"]
+        u = User.objects.get(id=user_id)
+        pwd = str(request.data["password"])
         u.set_password(pwd)
         u.save()
-        return Response({"msg":'Password Updated.',"status":200})
+        return Response({"msg": "Password Updated.", "status": 200})
+
 
 class ContactUsAPI(generics.GenericAPIView):
     # permission_classes = [permissions.IsAuthenticated]
-    serializer_class=ContactUsSerializer
-    def post(self,request,*args,**kwargs):
-        user_id=request.data.get('user_id')
+    serializer_class = ContactUsSerializer
+
+    def post(self, request, *args, **kwargs):
+        user_id = request.data.get("user_id")
         if user_id:
-            serializer=ContactUsSerializer(data=request.data)
+            serializer = ContactUsSerializer(data=request.data)
             if serializer.is_valid():
                 serializer.save()
-                return Response({"data":serializer.data,
-                                "status":status.HTTP_200_OK,
-                                "msg":"contact us created successfully"})
-            return Response({"msg":"User_id is already exists"})    
+                return Response(
+                    {
+                        "data": serializer.data,
+                        "status": status.HTTP_200_OK,
+                        "msg": "contact us created successfully",
+                    }
+                )
+            return Response({"msg": "User_id is already exists"})
 
-        return Response({"msg":"Enter a user _id"})   
+        return Response({"msg": "Enter a user _id"})
+
 
 class getContactUsAPI(generics.GenericAPIView):
     # permission_classes = [permissions.IsAuthenticated]
-    serializer_class=ContactUsSerializer
-    def get(self,request,*args,**kwargs):
-        contact_us=ContactUs.objects.all()
-        serializer=ContactUsSerializer(contact_us,many=True)
-        return Response({"data":serializer.data,
-                        "status":status.HTTP_200_OK,
-                         "msg":"get list of contact us "})        
+    serializer_class = ContactUsSerializer
+
+    def get(self, request, *args, **kwargs):
+        contact_us = ContactUs.objects.all()
+        serializer = ContactUsSerializer(contact_us, many=True)
+        return Response(
+            {
+                "data": serializer.data,
+                "status": status.HTTP_200_OK,
+                "msg": "get list of contact us ",
+            }
+        )
+
 
 class AboutUsAPI(generics.GenericAPIView):
     # permission_classes = [permissions.IsAuthenticated]
-    def get(self,request,*args,**kwargs):
+    def get(self, request, *args, **kwargs):
 
-        about_us=AboutUs.objects.all()
-        serializer=AboutUsSerializer(about_us,many=True)
-       
-        return Response({
-            'data':serializer.data,
-            'msg':'About Us',
-            'status':200
-        })      
-    
+        about_us = AboutUs.objects.all()
+        serializer = AboutUsSerializer(about_us, many=True)
+
+        return Response({"data": serializer.data, "msg": "About Us", "status": 200})
+
 
 class PrivacyPolicyAPI(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    def post(self,request,*args,**kwargs):
-        return Response({
-            'data':{'text':PrivacyPolicy.objects.all().values()},
-            'msg':'Privacy Policy',
-            'status':200
-        })            
+
+    def post(self, request, *args, **kwargs):
+        return Response(
+            {
+                "data": {"text": PrivacyPolicy.objects.all().values()},
+                "msg": "Privacy Policy",
+                "status": 200,
+            }
+        )
 
 
 class TermsConditionAPI(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    def post(self,request,*args,**kwargs):
-        return Response({
-            'data':{'text':TermsCondition.objects.all().values()},
-            'msg':'Terms Condition',
-            'status':200
-        })
+
+    def post(self, request, *args, **kwargs):
+        return Response(
+            {
+                "data": {"text": TermsCondition.objects.all().values()},
+                "msg": "Terms Condition",
+                "status": 200,
+            }
+        )
 
 
 class CreateNotification(APIView):
     """
     Create Notification
     """
+
     # permission_classes=(IsAuthenticated,)
     parser_classes = (FormParser, MultiPartParser)
 
@@ -1582,7 +1676,7 @@ class CreateNotification(APIView):
         request_body=NotificationSerializer,
     )
     @csrf_exempt
-    def put(self,request,pk):
+    def put(self, request, pk):
         try:
             notification = self.get_object(pk)
             print(notification)
@@ -1617,25 +1711,32 @@ class CreateNotification(APIView):
 class NotificationsAPI(generics.GenericAPIView):
     # permission_classes = (IsAuthenticated,)
     def post(self, request, *args, **kwargs):
-        n=Notification.objects.filter(User_id=request.POST['User_id'])
-        n.update(Status=request.POST['Status'])
-        return Response({
-        "data":{"Notifications": n.values('Status','User_id')[0:]},
-        "msg":'Notifications Updated successfully.',
-        "status":200
-        })
+        n = Notification.objects.filter(User_id=request.POST["User_id"])
+        n.update(Status=request.POST["Status"])
+        return Response(
+            {
+                "data": {"Notifications": n.values("Status", "User_id")[0:]},
+                "msg": "Notifications Updated successfully.",
+                "status": 200,
+            }
+        )
 
 
+import itertools
 import pandas as pd
-#Ashima mam code
+
+# Ashima mam code
 class Home(generics.GenericAPIView):
-    
+
     # permission_classes=(IsAuthenticated,)
-    def post(self,request,*args,**kwargs):
-        filters={k: v for k, v in request.data.items() if (v and (k=='city' or k=='State' or k=='Country'))}    # this is used for filtering purpose.
-        np=Profile.objects.filter().values()
-        Business=Buisness.objects.all().values()
-        
+    def post(self, request, *args, **kwargs):
+        filters = {
+            k: v
+            for k, v in request.data.items()
+            if (v and (k == "city" or k == "State" or k == "Country"))
+        }  # this is used for filtering purpose.
+        np = Profile.objects.filter().values()
+        Business = Buisness.objects.all().values()
 
         # i dont know why this line of code is added.
 
@@ -1644,137 +1745,206 @@ class Home(generics.GenericAPIView):
         # if not request.POST.get('State',False):
         #     filters['State']=Profile.objects.filter(user_id=request.POST['User']).values()[0]['state']
 
-        a=1
-        if a==1:
-            #update the longitude and latitude of user every time depends on their current changing location.(received as a input)
-            profile=Profile.objects.filter(user_id=request.POST['User']).update(lat=request.POST['latitude'],long=request.POST['longitude'])
-            lat= float(request.POST['latitude']) #profile['latitude']
-            lon= float(request.POST['longitude']) #profile['longitude']
-            city = request.POST.get('city', False)    
+        a = 1
+        if a == 1:
+            # update the longitude and latitude of user every time depends on their current changing location.(received as a input)
+            profile = Profile.objects.filter(user_id=request.POST["User"]).update(
+                lat=request.POST["latitude"], long=request.POST["longitude"]
+            )
+            lat = float(request.POST["latitude"])  # profile['latitude']
+            lon = float(request.POST["longitude"])  # profile['longitude']
+            city = request.POST.get("city", False)
 
-            if lat or lon: 
+            if lat or lon:
 
                 # return all receivers id whoose u already sends a request .
-                f1=FriendRequest.objects.filter(sender=request.POST['User']).values_list('receiver')# i send the friend request to others.
+                f1 = FriendRequest.objects.filter(
+                    sender=request.POST["User"]
+                ).values()  # i send the friend request to others.
                 print(f1)
-                # if f1:
-                #     for i in f1:
-                #         a=i['receiver']
-                # else:
-                #     a='0'
-                   
-                #return all senders id who is already sends me a friend request. 
-                f2=FriendRequest.objects.filter(receiver=request.POST['User']).values_list('sender')  # friend requests recieved by me.
+                if f1:
+                    x = []
+                    for i in f1:
+                        a = i["receiver_id"]
+                        x.append(a)
+
+                else:
+                    a = "0"
+                    x = []
+
+                # return all senders id who is already sends me a friend request.
+                f2 = FriendRequest.objects.filter(
+                    receiver=request.POST["User"]
+                ).values()  # friend requests recieved by me.
                 print(f2)
-                # if f2:
-                #     for i in f2:
-                #         b=i['sender']
-                # else:
-                #     b='0'     
-                friends=list(f1)+list(f2)
+                if f2:
+                    y = []
+                    for i in f2:
+                        b = i["sender_id"]
+                        y.append(b)
+                else:
+                    b = "0"
+                    y = []
+
+                friends = x + y
                 print(friends)
-                
-                #exclude the user who is already send or receives a friend request.🧨🧨🧨
-                p=Profile.objects.filter().exclude(user_id__in=friends).values('id','user_id')
-                print(p)
-                
-                # exclude the given user on the basis of his lat and long, we have to calculate the dstance of other users. 
-                all_l=Profile.objects.filter().exclude(user_id=request.POST['User']).exclude(user_id__in=friends).values('id','user_id','city','lat','long','profile_image','hostmatch','matchplayed','matchwon','rating',email_1=F('user_id__email'))  
+
+                # exclude the user who is already send or receives a friend request.🧨🧨🧨
+                # p=Profile.objects.filter().exclude(id__in=friends).values('id','user_id')
+                # print(p)
+
+                # exclude the given user on the basis of his lat and long, we have to calculate the dstance of other users.
+                all_l = (
+                    Profile.objects.filter()
+                    .exclude(user_id=request.POST["User"])
+                    .exclude(id__in=friends)
+                    .values(
+                        "id",
+                        "user_id",
+                        "city",
+                        "lat",
+                        "long",
+                        "profile_image",
+                        "hostmatch",
+                        "matchplayed",
+                        "matchwon",
+                        "rating",
+                        email_1=F("user_id__email"),
+                    )
+                )
                 print(all_l)
-                
+
                 # Searches on the bais of city.😎😎😎
                 if city:
-                   filter_profile_on_the_basis_of_city=all_l.filter(Q(city__icontains=city))
-                   buisness=Buisness.objects.all()
-                   return Response({'data':{'NearbyPlayers':filter_profile_on_the_basis_of_city.values(),'Business':buisness.values()},'msg':"near by users & buisness on the basis of city"})
-                
-                #another way to use filter.🧨🧨🧨
-                # all_l=Profile.objects.filter(**filters).exclude(user_id=request.POST['User']).exclude(user_id__in=friends).values('id','user_id','city','lat','long','profile_image','hostmatch','matchplayed','matchwon','rating',email_1=F('user_id__email'))  
+                    filter_profile_on_the_basis_of_city = all_l.filter(
+                        Q(city__icontains=city)
+                    )
+                    buisness = Buisness.objects.all()
+                    return Response(
+                        {
+                            "data": {
+                                "NearbyPlayers": filter_profile_on_the_basis_of_city.values(),
+                                "Business": buisness.values(),
+                            },
+                            "msg": "near by users & buisness on the basis of city",
+                        }
+                    )
 
-                distanc=[]
+                # another way to use filter.🧨🧨🧨
+                # all_l=Profile.objects.filter(**filters).exclude(user_id=request.POST['User']).exclude(user_id__in=friends).values('id','user_id','city','lat','long','profile_image','hostmatch','matchplayed','matchwon','rating',email_1=F('user_id__email'))
+
+                distanc = []
                 for i in all_l:
-                      lat2=i['lat']  #get the lat of first user and then 2nd according to loop.
-                      lon2=i['long']  #get the long of first user and then 2nd according to loop.
-                      if lat2 or lon2:
+                    lat2 = i[
+                        "lat"
+                    ]  # get the lat of first user and then 2nd according to loop.
+                    lon2 = i[
+                        "long"
+                    ]  # get the long of first user and then 2nd according to loop.
+                    if lat2 or lon2:
                         from math import sin, cos, sqrt, atan2, radians
+
                         lat1 = radians(float(lat))
                         lon1 = radians(float(lon))
                         R = 6373.0
-                        lat2=radians(float(lat2))
-                        lon2=radians(float(lon2))
+                        lat2 = radians(float(lat2))
+                        lon2 = radians(float(lon2))
                         dlon = lon2 - lon1
                         dlat = lat2 - lat1
-                        a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+                        a = (
+                            sin(dlat / 2) ** 2
+                            + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+                        )
                         c = 2 * atan2(sqrt(a), sqrt(1 - a))
                         distanc.append(R * c)
-                        
-                        #long way to add email field in response 👌👌
-                        p=Profile.objects.filter().exclude(user_id=request.POST['User']).values('user_id').exclude(user_id__in=friends)
-                        u=User.objects.filter(id__in=p).values('email')
-                        email=[]
+
+                        # long way to add email field in response 👌👌
+                        p = (
+                            Profile.objects.filter()
+                            .exclude(user_id=request.POST["User"])
+                            .values("user_id")
+                            .exclude(user_id__in=friends)
+                        )
+                        u = User.objects.filter(id__in=p).values("email")
+                        email = []
                         for i in u:
-                            e=i['email']
-                            email.append(e)    
+                            e = i["email"]
+                            email.append(e)
                         else:
                             pass
-                      else:
-                        distanc.append(2*6.28*6500)
+                    else:
+                        distanc.append(2 * 6.28 * 6500)
 
-                df = pd.DataFrame(list(all_l)) ## this will save 50% memory
+                df = pd.DataFrame(list(all_l))  ## this will save 50% memory
                 df = df.where(pd.notnull(df), None)
-                df['distance']=distanc
+                df["distance"] = distanc
                 # df['email']=email
-                df=df[df['distance']<50]
-                df=df.sort_values('distance')
+                df = df[df["distance"] < 50]
+                df = df.sort_values("distance")
                 # df=df.drop(['distance'], axis=1)
-                df=df.to_dict('records')
-                np=df
-                
-                all_l=Buisness.objects.all().values()
-                distanc=[]
+                df = df.to_dict("records")
+                np = df
+
+                all_l = Buisness.objects.all().values()
+                distanc = []
                 for i in all_l:
-                    lat2=i['lat']
-                    lon2=i['long']
+                    lat2 = i["lat"]
+                    lon2 = i["long"]
                     if lat2 or lon2:
                         from math import sin, cos, sqrt, atan2, radians
+
                         lat1 = radians(lat)
                         lon1 = radians(lon)
                         R = 6373.0
-                        lat2=radians(float(lat2))
-                        lon2=radians(float(lon2))
+                        lat2 = radians(float(lat2))
+                        lon2 = radians(float(lon2))
                         dlon = lon2 - lon1
                         dlat = lat2 - lat1
-                        a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+                        a = (
+                            sin(dlat / 2) ** 2
+                            + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+                        )
                         c = 2 * atan2(sqrt(a), sqrt(1 - a))
-                        distanc.append(R * c)  
+                        distanc.append(R * c)
 
-                        #add email field in repsonse
-                        b=Buisness.objects.all().values('user_id')
-                        u=User.objects.filter(id__in=b).values('email')
+                        # add email field in repsonse
+                        b = Buisness.objects.all().values("user_id")
+                        u = User.objects.filter(id__in=b).values("email")
                         # print(u)
-                        email=[]
+                        email = []
                         for i in u:
-                            e=i['email']
+                            e = i["email"]
                             email.append(e)
                         else:
-                            pass    
+                            pass
                     else:
-                        distanc.append(2*6.28*6500)
-                
-                df = pd.DataFrame(list(all_l)) ## this will save 50% memory👌👌
+                        distanc.append(2 * 6.28 * 6500)
+
+                df = pd.DataFrame(list(all_l))  ## this will save 50% memory👌👌
                 df = df.where(pd.notnull(df), None)
-                
-                df['distance']=distanc
-                df['email']=email
-                df=df[df['distance']<50]
-                df=df.sort_values('distance')
+
+                df["distance"] = distanc
+                df["email"] = email
+                df = df[df["distance"] < 50]
+                df = df.sort_values("distance")
                 # df=df.drop(['distance'], axis=1)
-                df=df.to_dict('records') 
-                Business=df
-                return Response({'data':{'NearbyPlayers':np,'Business':Business},'msg':'Home with sort','status':200})
-                
-           
-            return Response({'data':{'NearbyPlayers':np,'Business':Business},'msg':'Home','status':200})
+                df = df.to_dict("records")
+                Business = df
+                return Response(
+                    {
+                        "data": {"NearbyPlayers": np, "Business": Business},
+                        "msg": "Home with sort",
+                        "status": 200,
+                    }
+                )
+
+            return Response(
+                {
+                    "data": {"NearbyPlayers": np, "Business": Business},
+                    "msg": "Home",
+                    "status": 200,
+                }
+            )
 
 
 # def send_friend_request(self,request):
@@ -1784,101 +1954,142 @@ class Home(generics.GenericAPIView):
 #     if created:
 #         return Response('friend request send')
 #     else:
-#         return Response('friend request was already sent') 
+#         return Response('friend request was already sent')
 
 
 # def accept_friend_request(self,request):
-from django.db.models import Q,F,Case, Value, When, FloatField
+from django.db.models import Q, F, Case, Value, When, FloatField
+
+
 class GetAllFriendRequest(APIView):
     """
     Get All Friend_Request
     """
-    receiver_id = openapi.Parameter('receiver_id',
-                            in_=openapi.IN_QUERY,
-                            description='enter receiver_id to find the list of friend requests send by other users.',
-                            type=openapi.TYPE_INTEGER,
-                            )  
 
-    sender_id = openapi.Parameter('sender_id',
-                            in_=openapi.IN_QUERY,
-                            description='enter sender_id to find the list of friend requests that i send to others.',
-                            type=openapi.TYPE_INTEGER,
-                            )                          
+    receiver_id = openapi.Parameter(
+        "receiver_id",
+        in_=openapi.IN_QUERY,
+        description="enter receiver_id to find the list of friend requests send by other users.",
+        type=openapi.TYPE_INTEGER,
+    )
 
-    friends_accpted=openapi.Parameter('friends_accpted',
-                            in_=openapi.IN_QUERY,
-                            description='pass true if you want to get a list of friends who accepts my friend requests',
-                            type=openapi.TYPE_BOOLEAN,
-                            )
-    @swagger_auto_schema(
-            manual_parameters=[receiver_id,friends_accpted,sender_id]
-    )                        
-                    
+    sender_id = openapi.Parameter(
+        "sender_id",
+        in_=openapi.IN_QUERY,
+        description="enter sender_id to find the list of friend requests that i send to others.",
+        type=openapi.TYPE_INTEGER,
+    )
+
+    friends_accpted = openapi.Parameter(
+        "friends_accpted",
+        in_=openapi.IN_QUERY,
+        description="pass true if you want to get a list of friends who accepts my friend requests",
+        type=openapi.TYPE_BOOLEAN,
+    )
+
+    @swagger_auto_schema(manual_parameters=[receiver_id, friends_accpted, sender_id])
     @csrf_exempt
     def get(self, request):
         try:
-            data=request.GET
+            data = request.GET
             if data.get("receiver_id"):
-                receiver=data.get('receiver_id')
+                receiver = data.get("receiver_id")
             else:
-                receiver="" 
+                receiver = ""
 
             if data.get("sender_id"):
-                sender=data.get('sender_id')
+                sender = data.get("sender_id")
             else:
-                sender=""     
+                sender = ""
 
             if data.get("friends_accpted"):
-                friends=data.get('friends_accpted')
+                friends = data.get("friends_accpted")
             else:
-                friends=''   
-            print(friends)       
-        
-            friend_request=FriendRequest.objects.all()
+                friends = ""
+            print(friends)
 
-            #list of those frnds whoose request is accepted by me.
+            friend_request = FriendRequest.objects.all()
+
+            # list of those frnds whoose request is accepted by me.
             if receiver and friends:
-                friend_request=friend_request.filter(receiver=receiver,status="Accepted").values('id','sender','receiver','status',profile_image=F('sender_id__profile_image'),first_name=F('sender_id__user_id__first_name'),email=F('sender_id__user_id__email'))    
-                dictV=dict()
-                dictV=friend_request
-                return Response({
-                    'data':dictV,
-                    'msg':'All list of those friends whoose request is accepted by me',
-                    'status':200
-                 })
+                friend_request = friend_request.filter(
+                    receiver=receiver, status="Accepted"
+                ).values(
+                    "id",
+                    "sender",
+                    "receiver",
+                    "status",
+                    profile_image=F("sender_id__profile_image"),
+                    first_name=F("sender_id__user_id__first_name"),
+                    email=F("sender_id__user_id__email"),
+                )
+                dictV = dict()
+                dictV = friend_request
+                return Response(
+                    {
+                        "data": dictV,
+                        "msg": "All list of those friends whoose request is accepted by me",
+                        "status": 200,
+                    }
+                )
 
-            #Other users sends me a frnd request.    
+            # Other users sends me a frnd request.
             if receiver:
-                friend_request=friend_request.filter(receiver=receiver,status="Pending").values('id','sender','receiver','status',profile_image=F('sender_id__profile_image'),first_name=F('sender_id__user_id__first_name'),email=F('sender_id__user_id__email'))
-                dictV=dict()
-                dictV=friend_request
-                return Response({
-                    'data':dictV,
-                    'msg':'All list of friend request that other users sends to me and status is Accepted',
-                    'status':200
-                 })
+                friend_request = friend_request.filter(
+                    receiver=receiver, status="Pending"
+                ).values(
+                    "id",
+                    "sender",
+                    "receiver",
+                    "status",
+                    profile_image=F("sender_id__profile_image"),
+                    first_name=F("sender_id__user_id__first_name"),
+                    email=F("sender_id__user_id__email"),
+                )
+                dictV = dict()
+                dictV = friend_request
+                return Response(
+                    {
+                        "data": dictV,
+                        "msg": "All list of friend request that other users sends to me and status is Accepted",
+                        "status": 200,
+                    }
+                )
 
             # I sends a friend requests to other users.
             if sender:
-                friend_request=friend_request.filter(sender=sender,status="Pending").values('id','sender','receiver','status',profile_image=F('sender_id__profile_image'),first_name=F('sender_id__user_id__first_name'),email=F('sender_id__user_id__email'))    
-                dictV=dict()
-                dictV=friend_request
-                return Response({
-                    'data':dictV,
-                    'msg':'All list of friend request that i send to other users and status is Pending',
-                    'status':200
-                 })
+                friend_request = friend_request.filter(
+                    sender=sender, status="Pending"
+                ).values(
+                    "id",
+                    "sender",
+                    "receiver",
+                    "status",
+                    profile_image=F("sender_id__profile_image"),
+                    first_name=F("sender_id__user_id__first_name"),
+                    email=F("sender_id__user_id__email"),
+                )
+                dictV = dict()
+                dictV = friend_request
+                return Response(
+                    {
+                        "data": dictV,
+                        "msg": "All list of friend request that i send to other users and status is Pending",
+                        "status": 200,
+                    }
+                )
 
-            
-            if friend_request:     
-                serializer=GetFriendRequestSerializer(friend_request,many=True) 
-                return Response({
-                    'data':serializer.data,
-                    'status':status.HTTP_200_OK,
-                    'msg':'list of all friend requests'
-                    })                 
+            if friend_request:
+                serializer = GetFriendRequestSerializer(friend_request, many=True)
+                return Response(
+                    {
+                        "data": serializer.data,
+                        "status": status.HTTP_200_OK,
+                        "msg": "list of all friend requests",
+                    }
+                )
             else:
-                return Response({'msg':'search not found'})     
+                return Response({"msg": "search not found"})
         except:
             return Response({"friend requests does not find"})
 
@@ -1887,6 +2098,7 @@ class CreateFriendRequest(APIView):
     """
     Create Friend_Request
     """
+
     # permission_classes=(IsAuthenticated,)
     # parser_classes = (FormParser, MultiPartParser)
 
@@ -1914,9 +2126,9 @@ class CreateFriendRequest(APIView):
                     "message": "Friend Request sends Successfully",
                 }
             )
-            
-        else:    
-            
+
+        else:
+
             return ResponseBadRequest(
                 {
                     "data": serializer.errors,
@@ -1925,12 +2137,14 @@ class CreateFriendRequest(APIView):
                 }
             )
 
+
 class GetFriendRequest(APIView):
     """
     Get Friend Request by pk
     """
-    # permission_classes=(IsAuthenticated,)  
-    
+
+    # permission_classes=(IsAuthenticated,)
+
     @csrf_exempt
     def get_object(self, pk):
         try:
@@ -1941,7 +2155,7 @@ class GetFriendRequest(APIView):
     def get(self, request, pk):
         try:
             friend_request = self.get_object(pk)
-         
+
             serializer = FriendRequestSerializer(friend_request)
             return ResponseOk(
                 {
@@ -1959,19 +2173,21 @@ class GetFriendRequest(APIView):
                 }
             )
 
+
 class UpdateFriendRequest(APIView):
     """
     Update friend_request
     """
+
     # permission_classes=(IsAuthenticated,)
     # parser_classes = (FormParser, MultiPartParser)
-    
+
     def get_object(self, pk):
         try:
             return FriendRequest.objects.get(pk=pk)
         except FriendRequest.DoesNotExist:
             raise ResponseNotFound()
-            
+
     @swagger_auto_schema(
         operation_description="update friend request",
         operation_summary="update friend request",
@@ -1983,14 +2199,13 @@ class UpdateFriendRequest(APIView):
                 "status": openapi.Schema(type=openapi.TYPE_STRING),
             },
         ),
-    )     
-          
+    )
     @csrf_exempt
     def put(self, request, pk):
         try:
-           
+
             friend_request = self.get_object(pk)
-            serializer = FriendRequestSerializer(friend_request,data=request.data)
+            serializer = FriendRequestSerializer(friend_request, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return ResponseOk(
@@ -2017,10 +2232,12 @@ class UpdateFriendRequest(APIView):
                 }
             )
 
+
 class DeleteFriendRequest(APIView):
     """
     Delete Friend_Request
     """
+
     # permission_classes=(IsAuthenticated,)
     parser_classes = (FormParser, MultiPartParser)
 
@@ -2052,59 +2269,249 @@ class DeleteFriendRequest(APIView):
             )
 
 
-#postman API's for friend request
-
+# postman API's for friend request
 class Invitations(APIView):
-    def post(self,request):
-        data=request.data
-        friend_request=FriendRequest.objects.filter(receiver=request.data['receiver'],status="Pending").values('id','sender','receiver','status',profile_image=F('sender_id__profile_image'),first_name=F('sender_id__user_id__first_name'),email=F('sender_id__user_id__email'),host_match=F('sender_id__hostmatch'),match_played=F('sender_id__matchplayed'),match_wom=F('sender_id__matchplayed'),rating=F('sender_id__rating'),city=F('sender_id__city'),state=F('sender_id__state'),zip_code=F('sender_id__zip_code'))  
-        dictV=dict()
-        dictV=friend_request
-        return Response({
-            'data':dictV,
-            'msg':'All list of those friends who sends me a friend request',
-            'status':200
-         })
+    def post(self, request):
+        data = request.data
+        friend_request = FriendRequest.objects.filter(
+            receiver=request.data["receiver"], status="Pending"
+        ).values(
+            "id",
+            "sender",
+            "receiver",
+            "status",
+            profile_image=F("sender_id__profile_image"),
+            first_name=F("sender_id__user_id__first_name"),
+            email=F("sender_id__user_id__email"),
+            host_match=F("sender_id__hostmatch"),
+            match_played=F("sender_id__matchplayed"),
+            match_wom=F("sender_id__matchplayed"),
+            rating=F("sender_id__rating"),
+            city=F("sender_id__city"),
+            state=F("sender_id__state"),
+            zip_code=F("sender_id__zip_code"),
+        )
+        dictV = dict()
+        dictV = friend_request
+        return Response(
+            {
+                "data": dictV,
+                "msg": "All list of those friends who sends me a friend request",
+                "status": 200,
+            }
+        )
 
 
 class MyFriends_Accepted(APIView):
-    def post(self,request):
-        friend_request_accepted=FriendRequest.objects.filter(receiver=request.data['receiver'],status="Accepted").values('id','sender','receiver','status',profile_image=F('sender_id__profile_image'),first_name=F('sender_id__user_id__first_name'),email=F('sender_id__user_id__email'))   
-        return Response({
-            'friend_request_accepted':friend_request_accepted,
-            'msg':'All list of those friends who sends me a friend request and i accepted the request',
-            'status':200
-         })
+    def post(self, request):
+        print(request.data)
+        friend_request_accepted = FriendRequest.objects.filter(
+            receiver=request.data["receiver"], status="Accepted"
+        ).values(
+            "id",
+            "sender",
+            "receiver",
+            "status",
+            profile_image=F("sender_id__profile_image"),
+            first_name=F("sender_id__user_id__first_name"),
+            email=F("sender_id__user_id__email"),
+        )
+        return Response(
+            {
+                "friend_request_accepted": friend_request_accepted,
+                "msg": "All list of those friends who sends me a friend request and i accepted the request",
+                "status": 200,
+            }
+        )
 
 
 class Friend_Request_Send(APIView):
-    def post(self,request):
-        friend_request_send=FriendRequest.objects.filter(sender=request.data['sender'],status="Pending").values('id','sender','receiver','status',profile_image=F('sender_id__profile_image'),first_name=F('sender_id__user_id__first_name'),email=F('sender_id__user_id__email'))      
-        return Response({
-            'friend_request_send':friend_request_send,
-            'msg':'All list of friend request that i send to other users and status is Pending',
-            'status':200
-         })         
+    def post(self, request):
+        friend_request_send = FriendRequest.objects.filter(
+            sender=request.data["sender"], status="Pending"
+        ).values(
+            "id",
+            "sender",
+            "receiver",
+            "status",
+            profile_image=F("sender_id__profile_image"),
+            first_name=F("sender_id__user_id__first_name"),
+            email=F("sender_id__user_id__email"),
+        )
+        return Response(
+            {
+                "friend_request_send": friend_request_send,
+                "msg": "All list of friend request that i send to other users and status is Pending",
+                "status": 200,
+            }
+        )
 
 
 class Accept_Request(APIView):
-    def post(self,request):
-        update_status=FriendRequest.objects.filter(id=request.data['id']).update(status='Accepted') 
-        p=Profile.objects.filter(id=request.POST['id']).update(status='Accepted')
-        data=FriendRequest.objects.filter(id=request.data['id'])
-        
-        return Response({
-            'data':data.values(),
-            'msg':'Accept the friend request and status is Accepted',
-            'status':200
-         })      
+    def post(self, request):
+        update_status = FriendRequest.objects.filter(id=request.data["id"]).update(
+            status="Accepted"
+        )
+        # p=Profile.objects.filter(id=request.POST['id']).update(status='Accepted')
+        data = FriendRequest.objects.filter(id=request.data["id"])
+
+        return Response(
+            {
+                "data": data.values(),
+                "msg": "Accept the friend request and status is Accepted",
+                "status": 200,
+            }
+        )
+
 
 class Decline_Friend_Request(APIView):
-    def post(self,request):
-        update_status=FriendRequest.objects.filter(id=request.data['id']).delete()
-       
-        return Response({
-            'update_status':update_status,
-            'msg':'Declined the friend request',
-            'status':200
-         })            
+    def post(self, request):
+        update_status = FriendRequest.objects.filter(id=request.data["id"]).delete()
+
+        return Response(
+            {
+                "update_status": update_status,
+                "msg": "Declined the friend request",
+                "status": 200,
+            }
+        )
+
+
+# hostmatch invitations APi for profile field is foriegn key.
+class HostMatch_Invitations_API(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = HostMatchSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        match = serializer.save()
+        Profile.objects.filter(User=request.POST["User"]).update(
+            MatchesHosted=len(HostMatch.objects.filter(User=request.POST["User"]))
+        )
+        uids = (
+            str(request.data.get("UserInvited", ""))
+            .replace("[", "")
+            .replace("]", "")
+            .split(",")
+        )
+        for i in uids:
+            d = dict()
+            d["HostMatch"] = match.id
+            d["UserInvited_id"] = i
+            serializer2 = HostInvitationSerializer(data=d)
+            serializer2.is_valid(raise_exception=True)
+            device = serializer2.save()
+        return Response({"msg": "Host A Match", "status": 200})
+
+
+# swagger API for send a invitations by hostmatch id.
+class CreateHostInvitation(APIView):
+    """
+    Create HostInvitation
+    """
+
+    # permission_classes=(IsAuthenticated,)
+    parser_classes = (FormParser, MultiPartParser)
+
+    @swagger_auto_schema(
+        operation_description="create HostInvitation",
+        request_body=HostInvitationSerializer,
+    )
+    @csrf_exempt
+    def post(self, request):
+        serializer = HostInvitationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return ResponseOk(
+                {
+                    "data": serializer.data,
+                    "code": status.HTTP_200_OK,
+                    "message": "HostInvitation created succesfully",
+                }
+            )
+        else:
+            return ResponseBadRequest(
+                {
+                    "data": serializer.errors,
+                    "code": status.HTTP_400_BAD_REQUEST,
+                    "message": "HostInvitation is not valid",
+                }
+            )
+
+
+# hostmarch API's.(screen no.25)
+class HostMatch_Invitations(APIView):
+    def post(self, request):
+        data = request.data
+
+        friend_request = HostInvitation.objects.filter(
+            user_invited=request.data["user_invited"], status="Sent"
+        ).values(
+            "id",
+            "hostmatch_id",
+            "status",
+            "user_invited",
+            title=F("hostmatch_id__title"),
+            email=F("hostmatch_id__profile_id__user_id__email"),
+            who_invites_you=F("hostmatch_id__profile_id__user_id__first_name"),
+        )
+        print(friend_request)
+        dictV = dict()
+        dictV = friend_request
+        return Response(
+            {
+                "data": dictV,
+                "msg": "All list of those hostmatches who invites me for a match",
+                "status": 200,
+            }
+        )
+
+
+from django.utils.timezone import now
+
+# this is for attend the hostmatch request.
+class Accept_HostMatch_Request(APIView):
+    def post(self, request):
+        print(request.data)
+        update_status = HostInvitation.objects.filter(id=request.data["id"]).update(
+            status="Attend", DateAdded=now()
+        )
+        data = HostInvitation.objects.filter(id=request.data["id"])
+
+        return Response(
+            {
+                "data": data.values(),
+                "msg": "Accept the Hostmatch Request and status is Attend",
+                "status": 200,
+            }
+        )
+
+
+# this is for decline the hostmatch request.
+class Decline_Hostmatch_Request(APIView):
+    def post(self, request):
+        update_status = HostInvitation.objects.filter(id=request.data["id"]).delete()
+
+        return Response(
+            {
+                "update_status": update_status,
+                "msg": "Declined the friend request",
+                "status": 200,
+            }
+        )
+
+
+# list of those users who sends a hostmatch request and i attends the match.
+class Myhostmatch_Accepted(APIView):
+    def post(self, request):
+        friend_request_accepted = HostInvitation.objects.filter(
+            user_invited=request.data["user_invited"], status="Attend"
+        ).values()
+        return Response(
+            {
+                "friend_request_accepted": friend_request_accepted,
+                "msg": "All list of those friends who sends me a hostmatch request and i attends the request",
+                "status": 200,
+            }
+        )

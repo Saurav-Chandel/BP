@@ -9,10 +9,10 @@ class Migration(migrations.Migration):
         ('user', '0080_remove_hostmatch_location'),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name='hostmatch',
-            name='location',
-            field=models.CharField(blank=True, max_length=200, null=True),
-        ),
-    ]
+    # operations = [
+    #     migrations.AddField(
+    #         model_name='hostmatch',
+    #         name='location',
+    #         field=models.CharField(blank=True, max_length=200, null=True),
+    #     ),
+    # ]

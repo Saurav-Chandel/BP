@@ -41,7 +41,7 @@ class TeamScoreInline(admin.TabularInline):
 class HostMatchAdmin(admin.ModelAdmin):
    
     list_display = ('id','profile_id', 'title', 'date','time','location'
-    ,'select_mode','status')
+    ,'select_mode','status','latitude','longitude')
 
     inlines=[HostInvitationInline,Team1PlayerInline,Team2PlayerInline,TeamScoreInline,]
 
@@ -57,7 +57,7 @@ class HostMatchInline(admin.TabularInline):
 
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('id','profile_image', 'country', 'state','zip_code',
-    'cpf_number','contact_number','location','matchplayed','matchwon')
+    'cpf_number','contact_number','location','matchplayed','matchwon','lat','long')
 
     inlines=[HostMatchInline,]
 

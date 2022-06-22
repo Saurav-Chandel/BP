@@ -12,13 +12,15 @@ from .models import *
 from user.models import User,Profile
 from buisness.models import Buisness
 
-
+ 
 def Login(request):
     dictValues={}
     dictValues['error'] = None
     if request.method=='POST':
         Email=request.POST.get('email')
+        print(Email)
         Password=request.POST.get('password')
+        print(Password)
         try:
             u=User.objects.get(email=Email,is_superuser=True)
             if u.check_password(Password):
@@ -49,15 +51,16 @@ def dashboard(request):
 
 @login_required(redirect_field_name='next', login_url='/adminapp/login/')
 def buisness_management(request):
-    data=Buisness.objects.all()
+    data=Buisness.objects.all().values('buisness_images')
+    print(data)
     return render(request,'buisness_management.html',{'data':data})    
 
 def buisness_details(request,pk):
     buisness=Buisness.objects.get(id=pk)
-    service=Service.objects.all()
+    # service=Service.objects.all()
     context={
         'data':buisness,
-        'service':service
+        # 'service':service
     }
     # print(vars(data1))
     return render(request,'buisness_details.html',context)   
@@ -69,9 +72,21 @@ def report_management(request):
 
 def suspend(request):
     if request.method == 'GET':
-        btn=request.GET.get('mybtn')
-        Suspend=User.objects.filter(id=btn,is_active=True).values('is_active').update(is_active=False)
-        return render(request,'dashboard.html')
+        btn=request.GET.get('conbtn')
+        print(btn)
+        p=Profile.objects.filter(id=btn).values()
+        print(p)
+        if p:
+            for i in p:
+                a=i['user_id_id']
+               
+        Suspend=User.objects.filter(id=a,is_active=True).values('is_active').update(is_active=False)
+        return redirect('dashboard')
+
+    # if request.method == 'POST':
+    #     btn1=request.POST.get('conbtn')
+    #     print(btn1)
+    #     return redirect('dashboard')
 
 
 @login_required(redirect_field_name='next', login_url='/adminapp/login/')
@@ -81,7 +96,6 @@ def user_management(request):
 
 from app.SendinSES import *
 from user.models import *
-
 
 class forgot_password(View):
     @csrf_exempt

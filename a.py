@@ -26,7 +26,6 @@ import json
 # distance_in_km = distance * 100
 
 
-
 a=['a','b']     #python object(list)
 print(type(a))
 print(a)
@@ -52,3 +51,5 @@ print(x)
 y=json.loads(x)    #convert json to python
 print(y)
 print(type(y))
+
+

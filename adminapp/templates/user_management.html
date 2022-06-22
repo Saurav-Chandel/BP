@@ -61,7 +61,11 @@
                             <tr>
                                 {% for profile in data %}
                                 <td>{{profile.id}}</td>
-                                <td> <p><img src="{{ profile.profile_image.url }}" width="100px"></p></td>
+                                {% if profile.profile_image %}
+                                   <td> <p><img src="{{ profile.profile_image.url }}" width="100px"></p></td>
+                                {% else %}
+                                    <td> <p><img src="localhost:8000/media_url/buisness_image/671187-guru-nanak-dev-ji_UKqQYLa.jpg" width="100px"></p></td>
+                                {% endif %} 
                                 <td>{{profile.user_id.first_name}}</td>
                                 <td>{{profile.city}}</td>
                                 <td>{{profile.state}}</td>
